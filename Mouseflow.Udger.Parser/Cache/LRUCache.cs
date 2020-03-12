@@ -21,6 +21,8 @@ namespace Mouseflow.Udger.Parser
         private Node head;
         private Node tail;
 
+        public int CacheSize => entries.Count;
+
         private class Node
         {
             public Node Next { get; set; }
@@ -46,18 +48,18 @@ namespace Mouseflow.Udger.Parser
             if (!entries.TryGetValue(key, out entry))
             {
                 entry = new Node { Key = key, Value = value };
-                if (entries.Count == capacity)
-                {
-                    entries.TryRemove(tail.Key, out _);
-                    tail = tail.Previous;
-                    if (tail != null)
-                        tail.Next = null;
-                }
+                //if (entries.Count == capacity)
+                //{
+                //    entries.TryRemove(tail.Key, out _);
+                //    tail = tail.Previous;
+                //    if (tail != null)
+                //        tail.Next = null;
+                //}
                 entries.TryAdd(key, entry);
             }
 
             entry.Value = value;
-            MoveToHead(entry);
+            //MoveToHead(entry);
             if (tail == null)
                 tail = head;
         }
@@ -69,37 +71,37 @@ namespace Mouseflow.Udger.Parser
             if (!entries.TryGetValue(key, out entry))
                 return false;
 
-            MoveToHead(entry);
+            //MoveToHead(entry);
             value = entry.Value;
 
             return true;
         }
 
-        private void MoveToHead(Node entry)
-        {
-            if (entry == head || entry == null)
-                return;
+        //private void MoveToHead(Node entry)
+        //{
+        //    if (entry == head || entry == null)
+        //        return;
 
-            var next = entry.Next;
-            var previous = entry.Previous;
+        //    var next = entry.Next;
+        //    var previous = entry.Previous;
 
-            if (next != null)
-                next.Previous = entry.Previous;
+        //    if (next != null)
+        //        next.Previous = entry.Previous;
 
-            if (previous != null)
-                previous.Next = entry.Next;
+        //    if (previous != null)
+        //        previous.Next = entry.Next;
 
-            entry.Previous = null;
-            entry.Next = head;
+        //    entry.Previous = null;
+        //    entry.Next = head;
 
-            if (head != null)
-                head.Previous = entry;
+        //    if (head != null)
+        //        head.Previous = entry;
 
-            head = entry;
+        //    head = entry;
 
-            if (tail == entry)
-                tail = previous;
-        }
+        //    if (tail == entry)
+        //        tail = previous;
+        //}
 
     }
 }

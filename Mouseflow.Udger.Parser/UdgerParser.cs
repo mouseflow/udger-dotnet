@@ -50,6 +50,7 @@ namespace Mouseflow.Udger.Parser
         private readonly Dictionary<string, string> preparedStmtMap = new Dictionary<string, string>();
 
         public DateTime DataLoadTime;
+        public int CacheSize => cache.CacheSize;
         public bool IsDataLoaded { get; private set; } = false;
 
         private ConcurrentDictionary<string, DataRow> conDir_SQL_CRAWLER,
@@ -59,7 +60,7 @@ namespace Mouseflow.Udger.Parser
                                                       conDir_SQL_DEVICE,
                                                       conDir_SQL_CLIENT_CLASS;
  
-        public UdgerParser(bool useLRUCash = true, int LRUCashCapacity = 10000)
+        public UdgerParser(bool useLRUCash = true, int LRUCashCapacity = 100000)
         {
             dt = new DataReader();
             if (useLRUCash)
