@@ -11,20 +11,20 @@ namespace Mouseflow.Udger.Parser.Test
     {
         private static UdgerParser mParser;
 
-        static void Main(string[] args)
-        {
-            SetUpTestData();
-            mParser = new UdgerParser();
-            mParser.SetDataDir(@"C:\Mouseflow\Data\UserAgents");
-            mParser.LoadData();
+        //static void Main(string[] args)
+        //{
+        //    SetUpTestData();
+        //    mParser = new UdgerParser();
+        //    mParser.SetDataDir(@"C:\Mouseflow\Data\UserAgents");
+        //    mParser.LoadData();
 
-            TestThreadSafe();
-            TestThreadSafe();
-            TestThreadSafe();
-            TestThreadSafe();
+        //    TestThreadSafe();
+        //    TestThreadSafe();
+        //    TestThreadSafe();
+        //    TestThreadSafe();
 
-            Console.ReadKey();
-        }
+        //    Console.ReadKey();
+        //}
 
 
         static string[] chromeUas, chromeUasReversed, safariUas;
