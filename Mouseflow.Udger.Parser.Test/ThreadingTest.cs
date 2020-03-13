@@ -19,7 +19,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         {
             this.output = output;
             this.parserFixture = parserFixture;
-            parser = parserFixture.InitParser(100000); // @"C:\Mouseflow\Data\UserAgents\Cache\cache.json"
+            parser = parserFixture.InitParser(100000); // @"C:\Mouseflow\Data\UserAgents\Cache\Cache.json"
         }
 
         #region theories
@@ -28,21 +28,22 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         [InlineData(12)]
         public void Test_16mb_UserAgents_list(int taskAmount)
         {
-            output.WriteLine($"Cache size: {parser.CacheSize}");
+            output.WriteLine($"Cache size: {parser.Cache.Size}");
 
             var list = parserFixture.LargeListUserAgents;
             Task[] tasks = new Task[taskAmount];
             var indexSpan = list.Length / tasks.Length;
             for (int i = 0; i < tasks.Length; i++)
             {
-                var modifier = i * indexSpan;
-                tasks[i] = StartNewThread(delegate () { ProcessUserAgents(list.Skip(modifier).Take(indexSpan).ToArray(), parser); });
+                var indexStart = i * indexSpan;
+                tasks[i] = StartNewThread(delegate()
+                {
+                    ProcessUserAgents(list.Skip(indexStart).Take(indexSpan).ToArray(), parser);
+                });
             }
             Task.WaitAll(tasks);
-
-            output.WriteLine($"Cache size: {parser.CacheSize}");
-
-            //parser.SaveCacheToDisk(@"C:\Mouseflow\Data\UserAgents\Cache\cache.json");
+            output.WriteLine($"Cache size: {parser.Cache.Size}");
+            parser.Cache.SaveCache(@"C:\Mouseflow\Data\UserAgents\Cache\Cache.json");
         }
         #endregion
 
@@ -59,46 +60,57 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         [Fact]
         public void Test_multi_threading()
         {
-            output.WriteLine($"Cache size: {parser.CacheSize}");
+            output.WriteLine($"Cache size: {parser.Cache.Size}");
             var tasks = new Task[4];
-
             tasks[0] = StartNewThread(delegate () { TestUserAgents(parserFixture.SafariUserAgents, "Safari"); });
             tasks[1] = StartNewThread(delegate () { TestUserAgents(parserFixture.ChromeUserAgents, "Chrome"); });
             tasks[2] = StartNewThread(delegate () { TestUserAgents(parserFixture.ChromeUserAgentsReversed, "Chrome"); });
             tasks[3] = StartNewThread(delegate () { TestUserAgents(parserFixture.SafariUserAgentsReversed, "Safari"); });
-
             Task.WaitAll(tasks);
-            //parserFixture.parser.SaveCacheToDisk(@"C:\Mouseflow\Data\UserAgents\Cache\cache.json");
-            
-        }
-
-        [Fact]
-        public void Test_multi_threading2()
-        {
-            Test_multi_threading();
         }
 
         [Fact]
         public void Test_Safari_UserAgents()
         {
-            output.WriteLine($"Cache size: {parser.CacheSize}");
+            output.WriteLine($"Cache size: {parser.Cache.Size}");
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
         }
 
         [Fact]
-        public void Test_UserAgent_cache()
+        public void Test_can_cache_be_loaded()
         {
-            output.WriteLine($"Cache size: {parser.CacheSize}");
+            parser.Cache.LoadCache(@"C:\Mouseflow\Data\UserAgents\Cache\Cache.json");
+            Assert.True(parser.Cache.Size > 0);
+        }
+
+        [Fact]
+        public void Test_can_cache_be_flushed()
+        {
+            parser.Cache.LoadCache(@"C:\Mouseflow\Data\UserAgents\Cache\Cache.json");
+            Assert.True(parser.Cache.Flush() > 0);
+            Assert.True(parser.Cache.Size == 0);
+        }
+
+        [Fact]
+        public void Test_can_cache_be_saved_to_disk()
+        {
+            Test_multi_threading();
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
-            TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
-            TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
-            TestUserAgents(parserFixture.SafariUserAgents, "Safari");
-            TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
-            TestUserAgents(parserFixture.SafariUserAgents, "Safari");
-            TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
-            TestUserAgents(parserFixture.SafariUserAgents, "Safari");
-            TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
+            parser.Cache.SaveCache(@"C:\Mouseflow\Data\UserAgents\Cache\Cache.json");
+        }
+
+        [Fact]
+        public void Test_is_useragents_cached()
+        {
+            parser.Cache.Flush();
+            Assert.True(parser.UseCache);
+            Assert.True(parser.Cache.Size == 0);
+            for(int i = 0; i < 3; i++) { 
+                TestUserAgents(parserFixture.SafariUserAgents, "Safari");
+                TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
+            }
+            Assert.True(parser.Cache.Size > 0);
         }
         #endregion
 
@@ -119,6 +131,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests
             {
                 var uAgent = parser.Parse(uaStrings[i]);
                 Assert.NotNull(uAgent);
+                Assert.NotNull(uAgent.Ua);
             }
         }
 

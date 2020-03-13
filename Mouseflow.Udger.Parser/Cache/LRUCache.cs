@@ -16,18 +16,16 @@ using System.Text.Json;
 
 namespace Mouseflow.Udger.Parser
 {
-    class LRUCache<TKey,TValue>
+    public class LRUCache<TKey,TValue>
     {
-        private readonly ConcurrentDictionary<TKey, TValue> entries;
+        private ConcurrentDictionary<TKey, TValue> entries;
+        public string CachePath { get; private set; }
 
-        public int CacheSize => entries.Count;
+        public int Size => entries.Count;
 
         public LRUCache(int capacity, string cachePath = null)
         {
-            if (capacity <= 0)
-                throw new ArgumentOutOfRangeException(
-                    "capacity",
-                    "Capacity should be greater than zero");
+            this.CachePath = cachePath;
 
             if (string.IsNullOrWhiteSpace(cachePath))
                 entries = new ConcurrentDictionary<TKey, TValue>();
@@ -35,12 +33,11 @@ namespace Mouseflow.Udger.Parser
                 entries = JsonSerializer.Deserialize<ConcurrentDictionary<TKey, TValue>>(File.ReadAllBytes(cachePath));
         }
 
-        public void Set(TKey key, TValue value)
+        public bool TryAdd(TKey key, TValue value)
         {
-            if (!entries.TryGetValue(key, out var entry))
-            {
-                entries.TryAdd(key, value);
-            }
+            if (!entries.TryGetValue(key, out _))    
+                return entries.TryAdd(key, value);
+            return false;
         }
 
         public bool TryGetValue(TKey key, out TValue value)
@@ -53,10 +50,31 @@ namespace Mouseflow.Udger.Parser
             return true;
         }
 
+        public int Flush()
+        {
+            var tmp = entries.Count;
+            entries.Clear();
+            return tmp;
+        }
+
+        public int LoadCache(string cachePath)
+        {
+            this.CachePath = cachePath;
+            entries = JsonSerializer.Deserialize<ConcurrentDictionary<TKey, TValue>>(File.ReadAllBytes(cachePath));
+            return entries.Count;
+        }
+
+        public int ReloadCache()
+        {
+            entries = JsonSerializer.Deserialize<ConcurrentDictionary<TKey, TValue>>(File.ReadAllBytes(CachePath));
+            return entries.Count;
+        }
+
         public void SaveCache(string path)
         {
             string jsonString = JsonSerializer.Serialize(entries);
             File.WriteAllText(path, jsonString);
+            CachePath = path;
         }
 
     }

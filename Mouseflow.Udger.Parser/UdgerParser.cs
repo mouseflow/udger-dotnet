@@ -35,9 +35,8 @@ namespace Mouseflow.Udger.Parser
             public string pattern;
         }
 
-        private readonly LRUCache<string, UserAgent> cache;
-        private readonly bool useCache;
-        public int CacheSize => cache.CacheSize;
+        public readonly LRUCache<string, UserAgent> Cache;
+        public readonly bool UseCache;
 
         private static DataReader dt;
         private static WordDetector clientWordDetector;
@@ -62,13 +61,8 @@ namespace Mouseflow.Udger.Parser
         {
             dt = new DataReader();
             if (useLRUCash)
-                cache = new LRUCache<string, UserAgent>(LRUCashCapacity, cachePath);
-            useCache = useLRUCash;
-        }
-
-        public void SaveCacheToDisk(string path)
-        {
-            cache.SaveCache(path);
+                Cache = new LRUCache<string, UserAgent>(LRUCashCapacity, cachePath);
+            UseCache = useLRUCash;
         }
 
         public void SetDataDir(string dataDir, string fileName = null)
@@ -167,19 +161,18 @@ namespace Mouseflow.Udger.Parser
         }
 
         public UserAgent Parse(string ua)
-        {
-            UserAgent userAgent = null;
-
-            if (IsDataLoaded && ua != "")
+        {         
+            if (ua != "")
             {
-                if (useCache && cache.TryGetValue(ua, out userAgent)) { }
-                else
-                {
+                if (!(UseCache && Cache.TryGetValue(ua, out UserAgent userAgent))) {
                     userAgent = new UserAgent();
                     parseUA(ua.Replace("'", "''"), ref userAgent);
                 }
+
+                userAgent.Hits++;
+                return userAgent;
             }
-            return userAgent;
+            return null;
         }
 
         public IPAddress ParseIPAddress(string ip)
@@ -218,9 +211,9 @@ namespace Mouseflow.Udger.Parser
                     if (string.IsNullOrEmpty(userAgent.OsFamilyCode))
                         processDeviceBrand(ref userAgent);
 
-                    //set cache
-                    if (this.useCache)
-                        cache.Set(userAgentString, userAgent);
+                    //set Cache
+                    if (this.UseCache)
+                        Cache.TryAdd(userAgentString, userAgent);
                 }
             }
         }
