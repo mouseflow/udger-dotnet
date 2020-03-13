@@ -16,6 +16,8 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         private readonly ITestOutputHelper output;
         private readonly ParserFixture parserFixture;
 
+        private string  threadId => $"[{Thread.CurrentThread.ManagedThreadId}]{"",-3}";
+
         public ThreadingTest(ParserFixture parserFixture, ITestOutputHelper output)
         {
             this.output = output;
@@ -23,26 +25,30 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         }
 
         [Fact]
+        public void Test_can_parse_ip()
+        {
+            var ip4Addr = parserFixture.parser.ParseIPAddress("77.75.74.35");
+            var ip6Addr = parserFixture.parser.ParseIPAddress("2a02:598:111::9");
+            
+            Assert.Equal("CZ", ip6Addr.IpCountryCode);
+            Assert.Equal("CZ", ip4Addr.IpCountryCode);
+        }
+
+        [Fact]
         public void Test_multi_threading()
         {
             output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
-            var tasks = new Task[12];
+            var tasks = new Task[4];
 
-            tasks[0] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.SafariUserAgents, "Safari"));
-            tasks[1] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.ChromeUserAgents, "Chrome"));
-            tasks[2] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.ChromeUserAgentsReversed, "Chrome"));
-            tasks[3] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.SafariUserAgentsReversed, "Safari"));
-            tasks[4] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.SafariUserAgents, "Safari"));
-            tasks[5] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.ChromeUserAgents, "Chrome"));
-            tasks[6] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.ChromeUserAgentsReversed, "Chrome"));
-            tasks[7] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.SafariUserAgentsReversed, "Safari"));
-            tasks[8] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.SafariUserAgents, "Safari"));
-            tasks[9] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.ChromeUserAgents, "Chrome"));
-            tasks[10] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.ChromeUserAgentsReversed, "Chrome"));
-            tasks[11] = Task.Factory.StartNew(() => TestUserAgents(parserFixture.SafariUserAgentsReversed, "Safari"));
+            tasks[0] = StartNewThread(delegate () { TestUserAgents(parserFixture.SafariUserAgents, "Safari"); });
+            tasks[1] = StartNewThread(delegate () { TestUserAgents(parserFixture.ChromeUserAgents, "Chrome"); });
+            tasks[2] = StartNewThread(delegate () { TestUserAgents(parserFixture.ChromeUserAgentsReversed, "Chrome"); });
+            tasks[3] = StartNewThread(delegate () { TestUserAgents(parserFixture.SafariUserAgentsReversed, "Safari"); });
 
             Task.WaitAll(tasks);
+            //parserFixture.parser.SaveCacheToDisk(@"C:\Mouseflow\Data\UserAgents\Cache\cache.json");
         }
+
 
         [Theory]
         [InlineData(64)]
@@ -54,23 +60,42 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         [InlineData(1)]
         public void Test_16mb_UserAgents_list(int taskAmount)
         {
-            var list = parserFixture.LargeListUserAgents;
-            Task[] tasks = new Task[taskAmount];
-
-            output.WriteLine($"Large List UserAgentStrings: {list.Length}");
             output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
 
+            var list = parserFixture.LargeListUserAgents;
+            Task[] tasks = new Task[taskAmount];
             var indexStart = list.Length / tasks.Length;
             for (int i = 0; i < tasks.Length; i++)
             {
-                var multiplier = i;
-                tasks[i] = Task.Factory.StartNew(() => ProcessUserAgents(list, indexStart * multiplier));
-                output.WriteLine($"Task {i} started");
+                var modifier = i;
+                tasks[i] = StartNewThread(delegate() { ProcessUserAgents(list, indexStart * modifier, parserFixture.parser); });
             }
 
             Task.WaitAll(tasks);
             output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
-            //ProcessUserAgents(parserFixture.LargeListUserAgents, 0);
+
+            parserFixture.parser.SaveCacheToDisk(@"C:\Mouseflow\Data\UserAgents\Cache\cache.json");
+        }
+
+        private Task StartNewThread(Action method)
+        {
+            var start = DateTime.Now;
+            var task = Task.Factory.StartNew(() =>
+            {
+                output.WriteLine($"{threadId} Task Stared");
+                method();
+            })
+            .ContinueWith((t) =>
+            {
+                output.WriteLine($"{threadId} Task Finished in [{(DateTime.Now - start).TotalSeconds}]");
+            });
+            return task;
+        }
+
+        [Fact]
+        public void Test_large_file_single_thread()
+        {
+            Test_16mb_UserAgents_list(1);
         }
 
         [Fact]
@@ -104,23 +129,36 @@ namespace Mouseflow.Udger.Parser.Test.Tests
 
         private void TestUserAgents(string[] uaStrings, string exceptedResult)
         {
-            var start = DateTime.Now;
-            int totalAgents = uaStrings.Length;
-            int count = 0;
-            foreach (var ua in uaStrings)
+#if DEBUG
+            HashSet<string> stats = new HashSet<string>();
+            output.WriteLine($"{threadId} [TestUserAgents] Started");
+            output.WriteLine($"{threadId} [TestUserAgents] Expected result: {exceptedResult}");
+#endif
+            for (int i = 0; i < uaStrings.Length; i++)
             {
-                var uAgent = parserFixture.parser.Parse(ua);
+                var uAgent = parserFixture.parser.Parse(uaStrings[i]);
                 Assert.Contains(exceptedResult, uAgent.UaFamily);
-                count++;
+                Assert.NotNull(uAgent.DeviceClass);
+#if DEBUG
+                stats.Add(uAgent.OsFamily);
+#endif
             }
+#if DEBUG
+            output.WriteLine($"{threadId} [TestUserAgents] Stats");
+            foreach (var str in stats)
+            {
+                output.WriteLine($"\t{str}");
+            }
+            output.WriteLine($"{threadId} [TestUserAgents] Finished");
+#endif
         }
 
-        private void ProcessUserAgents(string[] uaStrings, int indexStart)
+        private void ProcessUserAgents(string[] uaStrings, int indexStart, UdgerParser parser)
         {
             int totalAgents = uaStrings.Length;
             for (int i = indexStart; i < totalAgents; i++) 
             {
-                var uAgent = parserFixture.parser.Parse(uaStrings[i]);
+                var uAgent = parser.Parse(uaStrings[i]);
             }
         }
 
