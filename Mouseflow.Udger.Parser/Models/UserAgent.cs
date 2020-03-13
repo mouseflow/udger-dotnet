@@ -44,8 +44,8 @@ namespace Mouseflow.Udger.Parser
         [NamePosition(8, Name = "UaFamilyCode")]
         public string UaFamilyCode { get;   set; }
 
-        [NamePosition(9, Name = "UaFamilyHompage")]
-        public string UaFamilyHompage { get;   set; }
+        //[NamePosition(9, Name = "UaFamilyHompage")]
+        //public string UaFamilyHompage { get;   set; }
 
         [NamePosition(10, Name = "UaFamilyVendor")]
         public string UaFamilyVendor { get;   set; }
@@ -53,17 +53,17 @@ namespace Mouseflow.Udger.Parser
         [NamePosition(11, Name = "UaFamilyVendorCode")]
         public string UaFamilyVendorCode { get;   set; }
 
-        [NamePosition(12, Name = "UaFamilyVendorHomepage")]
-        public string UaFamilyVendorHomepage { get;   set; }
+        //[NamePosition(12, Name = "UaFamilyVendorHomepage")]
+        //public string UaFamilyVendorHomepage { get;   set; }
 
-        [NamePosition(13, Name = "UaFamilyIcon")]
-        public string UaFamilyIcon { get;   set; }
+        //[NamePosition(13, Name = "UaFamilyIcon")]
+        //public string UaFamilyIcon { get;   set; }
 
-        [NamePosition(14, Name = "UaFamilyIconBig")]
-        public string UaFamilyIconBig { get;   set; }
+        //[NamePosition(14, Name = "UaFamilyIconBig")]
+        //public string UaFamilyIconBig { get;   set; }
 
-        [NamePosition(15, Name = "UaFamilyIconUrl")]
-        public string UaFamilyInfoUrl { get;   set; }
+        //[NamePosition(15, Name = "UaFamilyIconUrl")]
+        //public string UaFamilyInfoUrl { get;   set; }
 
         [NamePosition(16, Name = "UaEngine")]
         public string UaEngine { get;   set; }
@@ -74,17 +74,17 @@ namespace Mouseflow.Udger.Parser
         [NamePosition(18, Name = "OsCode")]
         public string OsCode { get;   set; }
 
-        [NamePosition(19, Name = "OsHomepage")]
-        public string OsHomepage { get;   set; }
+        //[NamePosition(19, Name = "OsHomepage")]
+        //public string OsHomepage { get;   set; }
 
-        [NamePosition(20, Name = "OsIcon")]
-        public string OsIcon { get;   set; }
+        //[NamePosition(20, Name = "OsIcon")]
+        //public string OsIcon { get;   set; }
 
-        [NamePosition(21, Name = "OsIconBig")]
-        public string OsIconBig { get;   set; }
+        //[NamePosition(21, Name = "OsIconBig")]
+        //public string OsIconBig { get;   set; }
 
-        [NamePosition(22, Name = "OsInfoUrl")]
-        public string OsInfoUrl { get;   set; }
+        //[NamePosition(22, Name = "OsInfoUrl")]
+        //public string OsInfoUrl { get;   set; }
 
         [NamePosition(23, Name = "OsFamily")]
         public string OsFamily { get;   set; }
@@ -98,8 +98,8 @@ namespace Mouseflow.Udger.Parser
         [NamePosition(26, Name = "OsFamilyVendorCode")]
         public string OsFamilyVendorCode { get;   set; }
 
-        [NamePosition(27, Name = "OsFamilyVendorHomepage")]
-        public string OsFamilyVendorHomepage { get;   set; }
+        //[NamePosition(27, Name = "OsFamilyVendorHomepage")]
+        //public string OsFamilyVendorHomepage { get;   set; }
 
         [NamePosition(28, Name = "DeviceClass")]
         public string DeviceClass { get;   set; }
@@ -107,14 +107,14 @@ namespace Mouseflow.Udger.Parser
         [NamePosition(29, Name = "DeviceClassCode")]
         public string DeviceClassCode { get;   set; }
 
-        [NamePosition(30, Name = "DeviceClassIcon")]
-        public string DeviceClassIcon { get;   set; }
+        //[NamePosition(30, Name = "DeviceClassIcon")]
+        //public string DeviceClassIcon { get;   set; }
 
-        [NamePosition(31, Name = "DeviceClassIconBig")]
-        public string DeviceClassIconBig { get;   set; }
+        //[NamePosition(31, Name = "DeviceClassIconBig")]
+        //public string DeviceClassIconBig { get;   set; }
 
-        [NamePosition(32, Name = "DeviceClassInfoUrl")]
-        public string DeviceClassInfoUrl { get;   set; }
+        //[NamePosition(32, Name = "DeviceClassInfoUrl")]
+        //public string DeviceClassInfoUrl { get;   set; }
 
         [NamePosition(33, Name = "CrawlerLastSeen")]
         public string CrawlerLastSeen { get;   set; }
@@ -137,14 +137,14 @@ namespace Mouseflow.Udger.Parser
         [NamePosition(39, Name = "DeviceBrandCode")]
         public string DeviceBrandCode { get; set; }
 
-        [NamePosition(40, Name = "DeviceBrandHomepage")]
-        public string DeviceBrandHomepage { get; set; }
+        //[NamePosition(40, Name = "DeviceBrandHomepage")]
+        //public string DeviceBrandHomepage { get; set; }
 
-        [NamePosition(41, Name = "DeviceBrandIcon")]
-        public string DeviceBrandIcon { get; set; }
+        //[NamePosition(41, Name = "DeviceBrandIcon")]
+        //public string DeviceBrandIcon { get; set; }
 
-        [NamePosition(42, Name = "DeviceBrandIconBig")]
-        public string DeviceBrandIconBig { get; set; }
+        //[NamePosition(42, Name = "DeviceBrandIconBig")]
+        //public string DeviceBrandIconBig { get; set; }
 
         #endregion
         #region constructors

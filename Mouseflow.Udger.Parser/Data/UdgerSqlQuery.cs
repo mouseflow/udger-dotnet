@@ -33,11 +33,11 @@ namespace Mouseflow.Udger.Parser
             crawler_classification_code AS crawler_category_code,
             NULL AS ua_uptodate_current_version,
             family AS ua_family,
-            family_code AS ua_family_code,
-            family_homepage AS ua_family_homepage,
-            family_icon AS ua_family_icon,
-            NULL AS ua_family_icon_big,
-            vendor AS ua_family_vendor,
+            family_code AS ua_family_code,"+
+            //family_homepage AS ua_family_homepage,
+            //family_icon AS ua_family_icon,
+            //NULL AS ua_family_icon_big,
+            @"vendor AS ua_family_vendor,
             vendor_code AS ua_family_vendor_code,
             vendor_homepage AS ua_family_vendor_homepage
         FROM
@@ -62,11 +62,11 @@ namespace Mouseflow.Udger.Parser
                 NULL AS crawler_category_code,
                 uptodate_current_version AS ua_uptodate_current_version,
                 name AS ua_family,
-                name_code AS ua_family_code,
-                homepage AS ua_family_homepage,
-                icon AS ua_family_icon,
-                icon_big AS ua_family_icon_big,
-                vendor AS ua_family_vendor,
+                name_code AS ua_family_code," +
+                //homepage AS ua_family_homepage,
+                //icon AS ua_family_icon,
+                //icon_big AS ua_family_icon_big,
+              @"vendor AS ua_family_vendor,
                 vendor_code AS ua_family_vendor_code,
                 vendor_homepage AS ua_family_vendor_homepage,
                 regstring
@@ -77,17 +77,17 @@ namespace Mouseflow.Udger.Parser
             JOIN
                 udger_client_class ON udger_client_class.id = udger_client_list.class_id";
 
-    private static readonly String OS_COLUMNS =
-           @"family AS os_family,
+        private static readonly String OS_COLUMNS =
+            @"family AS os_family,
             family_code AS os_family_code,
             name AS os,
-            name_code AS os_code,
-            homepage AS os_home_page,
-            icon AS os_icon,
-            icon_big AS os_icon_big,
-            vendor AS os_family_vendor,
-            vendor_code AS os_family_vendor_code,
-            vendor_homepage AS os_family_vedor_homepage";
+            name_code AS os_code," +
+            //homepage AS os_home_page,
+            //icon AS os_icon,
+            //icon_big AS os_icon_big,
+            @"vendor AS os_family_vendor,
+            vendor_code AS os_family_vendor_code";
+            //vendor_homepage AS os_family_vedor_homepage";
 
     public static readonly String SQL_OS =
         $@"SELECT 
@@ -109,9 +109,9 @@ namespace Mouseflow.Udger.Parser
 
     private static readonly String DEVICE_COLUMNS =
            @"name AS device_class,
-            name_code AS device_class_code,
-            icon AS device_class_icon,
-            icon_big AS device_class_icon_big";
+            name_code AS device_class_code";
+            //icon AS device_class_icon,
+            //icon_big AS device_class_icon_big";
 
     public static readonly String SQL_DEVICE =
         $@"SELECT         

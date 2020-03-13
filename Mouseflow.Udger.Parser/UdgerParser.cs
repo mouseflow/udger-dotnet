@@ -47,8 +47,6 @@ namespace Mouseflow.Udger.Parser
         private static List<IdRegString> osRegstringList;
         private static List<IdRegString> deviceRegstringList;
 
-        public static bool IsDataLoaded { get; private set; } = false;
-
         private static ConcurrentBag<DeviceName> conBag_DeviceName_List;
         private static ConcurrentBag<DeviceBrand> conBag_DeviceName_Brand;
         private static ConcurrentBag<DeviceRegex> conBag_SQL_DEVICE_REGEX;
@@ -85,13 +83,13 @@ namespace Mouseflow.Udger.Parser
                 throw new Exception($"Data file {fileName ?? "udgerdb_v3.dat"} not found");
         }
 
-        public void LoadData(bool ipDataInMemory = false)
+        public void LoadDataIntoMemory(bool ipDataInMemory = false)
         {
             if (!dt.Connected)
                 dt.Connect();
             InitStaticStructures();
 
-            conBag_DeviceName_List = dt.SelectQuery<DeviceName>(@"SELECT* FROM udger_devicename_list");
+            conBag_DeviceName_List = dt.SelectQuery<DeviceName>(@"SELECT * FROM udger_devicename_list");
             conBag_DeviceName_Brand = dt.SelectQuery<DeviceBrand>(@"SELECT* FROM udger_devicename_brand");
             conBag_SQL_DEVICE_REGEX = dt.SelectQuery<DeviceRegex>(UdgerSqlQuery.SQL_DEVICE_REGEX);
 
@@ -103,8 +101,6 @@ namespace Mouseflow.Udger.Parser
 
             conDir_SQL_OS = dt.SelectQuery<OS>(UdgerSqlQuery.SQL_OS, 0);
             conDir_SQL_CLIENT_OS = dt.SelectQuery<OS>(UdgerSqlQuery.SQL_CLIENT_OS, 0);
-
-            IsDataLoaded = true;
 
             InitRegexString();
             if (ipDataInMemory) { 
@@ -354,9 +350,9 @@ namespace Mouseflow.Udger.Parser
                             userAgent.DeviceMarketname = deviceNames.First().marketname;
                             userAgent.DeviceBrand = deviceBrands.First().brand;
                             userAgent.DeviceBrandCode = deviceBrands.First().brand_code;
-                            userAgent.DeviceBrandHomepage = deviceBrands.First().brand_url;
-                            userAgent.DeviceBrandIcon = deviceBrands.First().icon;
-                            userAgent.DeviceBrandIconBig = deviceBrands.First().icon_big;
+                            //userAgent.DeviceBrandHomepage = deviceBrands.First().brand_url;
+                            //userAgent.DeviceBrandIcon = deviceBrands.First().icon;
+                            //userAgent.DeviceBrandIconBig = deviceBrands.First().icon_big;
                             break;
                         }
                     }               
@@ -398,12 +394,12 @@ namespace Mouseflow.Udger.Parser
             userAgent.UaUptodateCurrentVersion = client.ua_uptodate_current_version;
             userAgent.UaFamily = client.ua_family;
             userAgent.UaFamilyCode = client.ua_family_code;
-            userAgent.UaFamilyHompage = client.ua_family_homepage;
+            //userAgent.UaFamilyHompage = client.ua_family_homepage;
             userAgent.UaFamilyVendor = client.ua_family_vendor;
             userAgent.UaFamilyVendorCode = client.ua_family_vendor_code;
-            userAgent.UaFamilyVendorHomepage = client.ua_family_vendor_homepage;
-            userAgent.UaFamilyIcon = client.ua_family_icon;
-            userAgent.UaFamilyIconBig = client.ua_family_icon_big;
+            //userAgent.UaFamilyVendorHomepage = client.ua_family_vendor_homepage;
+            //userAgent.UaFamilyIcon = client.ua_family_icon;
+            //userAgent.UaFamilyIconBig = client.ua_family_icon_big;
             userAgent.UaEngine = client.ua_engine;
         }
 
@@ -411,22 +407,22 @@ namespace Mouseflow.Udger.Parser
         {
             userAgent.Os = os.os;
             userAgent.OsCode = os.os_code;
-            userAgent.OsHomepage = os.os_home_page;
-            userAgent.OsIcon = os.os_icon;
-            userAgent.OsIconBig = os.os_icon_big;
+            //userAgent.OsHomepage = os.os_home_page;
+            //userAgent.OsIcon = os.os_icon;
+            //userAgent.OsIconBig = os.os_icon_big;
             userAgent.OsFamily = os.os_family;
             userAgent.OsFamilyCode = os.os_family_code;
             userAgent.OsFamilyVendor = os.os_family_vendor;
             userAgent.OsFamilyVendorCode = os.os_family_vendor_code;
-            userAgent.OsFamilyVendorHomepage = os.os_family_vedor_homepage;
+            //userAgent.OsFamilyVendorHomepage = os.os_family_vedor_homepage;
         }
 
         private void PrepareDevice(DeviceColumn deviceColumn, ref UserAgent userAgent)
         {
             userAgent.DeviceClass = deviceColumn.device_class;
             userAgent.DeviceClassCode = deviceColumn.device_class_code;
-            userAgent.DeviceClassIcon = deviceColumn.device_class_icon;
-            userAgent.DeviceClassIconBig = deviceColumn.device_class_icon_big;
+            //userAgent.DeviceClassIcon = deviceColumn.device_class_icon;
+            //userAgent.DeviceClassIconBig = deviceColumn.device_class_icon_big;
         }
 
         private void prepareIp(DataRow _row, ref IPAddress ipAddress)

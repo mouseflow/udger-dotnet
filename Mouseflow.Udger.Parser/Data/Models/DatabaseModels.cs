@@ -23,12 +23,12 @@ namespace Mouseflow.Udger.Parser.Data.Models
         public string ua_uptodate_current_version { get; set; }
         public string ua_family { get; set; }
         public string ua_family_code { get; set; }
-        public string ua_family_homepage { get; set; }
-        public string ua_family_icon { get; set; }
-        public string ua_family_icon_big { get; set; }
+        //public string ua_family_homepage { get; set; }
+        //public string ua_family_icon { get; set; }
+        //public string ua_family_icon_big { get; set; }
         public string ua_family_vendor { get; set; }
         public string ua_family_vendor_code { get; set; }
-        public string ua_family_vendor_homepage { get; set; }
+        //public string ua_family_vendor_homepage { get; set; }
         public string regstring { get; set; }
 
         public Regex Reg { get; set; }
@@ -39,8 +39,8 @@ namespace Mouseflow.Udger.Parser.Data.Models
     {
         public string device_class { get; set; }
         public string device_class_code { get; set; }
-        public string device_class_icon { get; set; }
-        public string device_class_icon_big { get; set; }
+        //public string device_class_icon { get; set; }
+        //public string device_class_icon_big { get; set; }
     }
 
     // UdgerSqlQuery.SQL_OS
@@ -57,13 +57,13 @@ namespace Mouseflow.Udger.Parser.Data.Models
         public string os_family_code { get; set; }
         public string os { get; set; }
         public string os_code { get; set; }
-        public string os_home_page { get; set; }
-        public string deviceos_icon_class { get; set; }
-        public string os_icon { get; set; }
-        public string os_icon_big { get; set; }
+        //public string os_home_page { get; set; }
+        //public string deviceos_icon_class { get; set; }
+        //public string os_icon { get; set; }
+        //public string os_icon_big { get; set; }
         public string os_family_vendor { get; set; }
         public string os_family_vendor_code { get; set; }
-        public string os_family_vedor_homepage { get; set; }
+        //public string os_family_vedor_homepage { get; set; }
     }
 
     #endregion
@@ -94,9 +94,9 @@ namespace Mouseflow.Udger.Parser.Data.Models
         public int id { get; set; }
         public string brand { get; set; }
         public string brand_code { get; set; }
-        public string brand_url { get; set; }
-        public string icon { get; set; }
-        public string icon_big { get; set; }
+        //public string brand_url { get; set; }
+        //public string icon { get; set; }
+        //public string icon_big { get; set; }
     }
     #endregion
 
