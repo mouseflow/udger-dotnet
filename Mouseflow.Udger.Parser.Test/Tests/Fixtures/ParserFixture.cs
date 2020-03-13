@@ -34,7 +34,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests.Fixtures
         public ParserFixture()
         {
             LoadTestData();
-            parser = new UdgerParser();
+            parser = new UdgerParser(true, 100000); // @"C:\Mouseflow\Data\UserAgents\Cache\cache.json"
             parser.SetDataDir(@"C:\Mouseflow\Data\UserAgents");
             parser.LoadData();
         }
