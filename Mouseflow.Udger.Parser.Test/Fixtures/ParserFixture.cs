@@ -24,9 +24,12 @@ namespace Mouseflow.Udger.Parser.Test.Tests.Fixtures
 
         public UdgerParser InitParser(int caschCapacity = 10000, string cachepath = null)
         {
-            parser = new UdgerParser(true, caschCapacity, cachepath);
-            parser.SetDataDir(@"C:\Mouseflow\Data\UserAgents\");
-            parser.LoadData();
+            if (parser == null)
+            {
+                parser = new UdgerParser(true, caschCapacity, cachepath);
+                parser.SetDataDir(@"C:\Mouseflow\Data\UserAgents\");
+                parser.LoadData();
+            }
             return parser;
         }
 
