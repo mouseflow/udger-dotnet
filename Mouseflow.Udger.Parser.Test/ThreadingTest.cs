@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Mouseflow.Udger.Parser.Test.Tests.Fixtures;
@@ -15,20 +12,49 @@ namespace Mouseflow.Udger.Parser.Test.Tests
     {
         private readonly ITestOutputHelper output;
         private readonly ParserFixture parserFixture;
-
-        private string  threadId => $"[{Thread.CurrentThread.ManagedThreadId}]{"",-3}";
+        private readonly UdgerParser parser;
+        private string threadId => $"[{Thread.CurrentThread.ManagedThreadId}]{"",-3}";
 
         public ThreadingTest(ParserFixture parserFixture, ITestOutputHelper output)
         {
             this.output = output;
             this.parserFixture = parserFixture;
+            this.parser = parserFixture.InitParser(100000); // @"C:\Mouseflow\Data\UserAgents\Cache\cache.json"
         }
 
+        #region theories
+        [Theory]
+        [InlineData(64)]
+        [InlineData(32)]
+        [InlineData(16)]
+        [InlineData(12)]
+        [InlineData(8)]
+        public void Test_16mb_UserAgents_list(int taskAmount)
+        {
+            output.WriteLine($"Cache size: {parser.CacheSize}");
+
+            var list = parserFixture.LargeListUserAgents;
+            Task[] tasks = new Task[taskAmount];
+            var indexStart = list.Length / tasks.Length;
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                var modifier = i;
+                tasks[i] = StartNewThread(delegate () { ProcessUserAgents(list, indexStart * modifier, parser); });
+            }
+            Task.WaitAll(tasks);
+
+            output.WriteLine($"Cache size: {parser.CacheSize}");
+
+            //parser.SaveCacheToDisk(@"C:\Mouseflow\Data\UserAgents\Cache\cache.json");
+        }
+        #endregion
+
+        #region facts
         [Fact]
         public void Test_can_parse_ip()
         {
-            var ip4Addr = parserFixture.parser.ParseIPAddress("77.75.74.35");
-            var ip6Addr = parserFixture.parser.ParseIPAddress("2a02:598:111::9");
+            var ip4Addr = parser.ParseIPAddress("77.75.74.35");
+            var ip6Addr = parser.ParseIPAddress("2a02:598:111::9");
             
             Assert.Equal("CZ", ip6Addr.IpCountryCode);
             Assert.Equal("CZ", ip4Addr.IpCountryCode);
@@ -37,7 +63,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         [Fact]
         public void Test_multi_threading()
         {
-            output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
+            output.WriteLine($"Cache size: {parser.CacheSize}");
             var tasks = new Task[4];
 
             tasks[0] = StartNewThread(delegate () { TestUserAgents(parserFixture.SafariUserAgents, "Safari"); });
@@ -49,55 +75,6 @@ namespace Mouseflow.Udger.Parser.Test.Tests
             //parserFixture.parser.SaveCacheToDisk(@"C:\Mouseflow\Data\UserAgents\Cache\cache.json");
         }
 
-
-        [Theory]
-        [InlineData(64)]
-        [InlineData(32)]
-        [InlineData(16)]
-        [InlineData(12)]
-        [InlineData(8)]
-        [InlineData(4)]
-        [InlineData(1)]
-        public void Test_16mb_UserAgents_list(int taskAmount)
-        {
-            output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
-
-            var list = parserFixture.LargeListUserAgents;
-            Task[] tasks = new Task[taskAmount];
-            var indexStart = list.Length / tasks.Length;
-            for (int i = 0; i < tasks.Length; i++)
-            {
-                var modifier = i;
-                tasks[i] = StartNewThread(delegate() { ProcessUserAgents(list, indexStart * modifier, parserFixture.parser); });
-            }
-
-            Task.WaitAll(tasks);
-            output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
-
-            parserFixture.parser.SaveCacheToDisk(@"C:\Mouseflow\Data\UserAgents\Cache\cache.json");
-        }
-
-        private Task StartNewThread(Action method)
-        {
-            var start = DateTime.Now;
-            var task = Task.Factory.StartNew(() =>
-            {
-                output.WriteLine($"{threadId} Task Stared");
-                method();
-            })
-            .ContinueWith((t) =>
-            {
-                output.WriteLine($"{threadId} Task Finished in [{(DateTime.Now - start).TotalSeconds}]");
-            });
-            return task;
-        }
-
-        [Fact]
-        public void Test_large_file_single_thread()
-        {
-            Test_16mb_UserAgents_list(1);
-        }
-
         [Fact]
         public void Test_multi_threading2()
         {
@@ -107,14 +84,14 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         [Fact]
         public void Test_Safari_UserAgents()
         {
-            output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
+            output.WriteLine($"Cache size: {parser.CacheSize}");
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
         }
 
         [Fact]
         public void Test_UserAgent_cache()
         {
-            output.WriteLine($"Cache size: {parserFixture.parser.CacheSize}");
+            output.WriteLine($"Cache size: {parser.CacheSize}");
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
             TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
@@ -126,7 +103,9 @@ namespace Mouseflow.Udger.Parser.Test.Tests
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
             TestUserAgents(parserFixture.ChromeUserAgents, "Chrome");
         }
+        #endregion
 
+        #region methods
         private void TestUserAgents(string[] uaStrings, string exceptedResult)
         {
 #if DEBUG
@@ -136,7 +115,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests
 #endif
             for (int i = 0; i < uaStrings.Length; i++)
             {
-                var uAgent = parserFixture.parser.Parse(uaStrings[i]);
+                var uAgent = parser.Parse(uaStrings[i]);
                 Assert.Contains(exceptedResult, uAgent.UaFamily);
                 Assert.NotNull(uAgent.DeviceClass);
 #if DEBUG
@@ -155,12 +134,27 @@ namespace Mouseflow.Udger.Parser.Test.Tests
 
         private void ProcessUserAgents(string[] uaStrings, int indexStart, UdgerParser parser)
         {
-            int totalAgents = uaStrings.Length;
-            for (int i = indexStart; i < totalAgents; i++) 
+            for (int i = indexStart; i < uaStrings.Length; i++) 
             {
                 var uAgent = parser.Parse(uaStrings[i]);
+                Assert.NotNull(uAgent);
             }
         }
 
+        private Task StartNewThread(Action method)
+        {
+            var start = DateTime.Now;
+            var task = Task.Factory.StartNew(() =>
+                {
+                    output.WriteLine($"{threadId} Task Stared");
+                    method();
+                })
+                .ContinueWith((t) =>
+                {
+                    output.WriteLine($"{threadId} Task Finished in [{(DateTime.Now - start).TotalSeconds}]");
+                });
+            return task;
+        }
+        #endregion
     }
 }
