@@ -78,17 +78,16 @@ namespace Mouseflow.Udger.Parser
                 udger_client_class ON udger_client_class.id = udger_client_list.class_id";
 
     private static readonly String OS_COLUMNS =
-            "family AS os_family, " +
-            "family_code AS os_family_code, " +
-            "name AS os, " +
-            "name_code AS os_code, " +
-            "homepage AS os_home_page, " +
-            "icon AS os_icon, " +
-            "icon_big AS os_icon_big, " +
-            "vendor AS os_family_vendor, " +
-            "vendor_code AS os_family_vendor_code, " +
-            "vendor_homepage AS os_family_vedor_homepage, " +
-            "'https://udger.com/resources/ua-list/os-detail?os=' || REPLACE(name, ' ', '%20') AS os_info_url ";
+           @"family AS os_family,
+            family_code AS os_family_code,
+            name AS os,
+            name_code AS os_code,
+            homepage AS os_home_page,
+            icon AS os_icon,
+            icon_big AS os_icon_big,
+            vendor AS os_family_vendor,
+            vendor_code AS os_family_vendor_code,
+            vendor_homepage AS os_family_vedor_homepage";
 
     public static readonly String SQL_OS =
         $@"SELECT 
@@ -109,11 +108,10 @@ namespace Mouseflow.Udger.Parser
             udger_os_list ON udger_os_list.id = udger_client_os_relation.os_id";
 
     private static readonly String DEVICE_COLUMNS =
-            "name AS device_class, " +
-            "name_code AS device_class_code, " +
-            "icon AS device_class_icon, " +
-            "icon_big AS device_class_icon_big, " +
-            "'https://udger.com/resources/ua-list/device-detail?device=' || REPLACE(name, ' ', '%20') AS device_class_info_url ";
+           @"name AS device_class,
+            name_code AS device_class_code,
+            icon AS device_class_icon,
+            icon_big AS device_class_icon_big";
 
     public static readonly String SQL_DEVICE =
         $@"SELECT         
@@ -133,6 +131,32 @@ namespace Mouseflow.Udger.Parser
         "JOIN " +
             "udger_client_class ON udger_client_class.deviceclass_id = udger_deviceclass_list.id";
 
+    public static readonly String SQL_DEVICE_REGEX =
+        @"SELECT
+            os_family_code,
+			os_code,
+            id, 
+            regstring 
+        FROM 
+            udger_devicename_regex ";
+
+    public static readonly String SQL_DEVICE_NAME_LIST =
+        @"SELECT 
+            marketname,
+            brand_code,
+            brand,
+            brand_url,
+            icon,
+            icon_big,
+            regex_id,
+            code
+        FROM 
+            udger_devicename_list 
+        JOIN 
+            udger_devicename_brand ON udger_devicename_brand.id=udger_devicename_list.brand_id ";
+
+
+    #region IP SQL
     private static readonly String IP_COLUMNS =
             "ip_classification AS ip_classification, " +
             "ip_classification_code AS ip_classification_code, " +
@@ -204,30 +228,38 @@ namespace Mouseflow.Udger.Parser
             "iplong_from5 <= {10} AND iplong_to5 >= {11} AND " +
             "iplong_from6 <= {12} AND iplong_to6 >= {13} AND " +
             "iplong_from7 <= {14} AND iplong_to7 >= {15}";
+    
+    public static readonly string SQL_IP_TABLE = @"SELECT 
+                                                    ip,
+                                                    udger_crawler_list.id as botid,
+                                                    ip_last_seen,
+                                                    ip_hostname,
+                                                    ip_country,ip_city,
+                                                    ip_country_code,ip_classification,
+                                                    ip_classification_code,
+                                                    name,
+                                                    ver,
+                                                    ver_major,
+                                                    last_seen,
+                                                    respect_robotstxt,
+                                                    family,family_code,
+                                                    family_homepage,
+                                                    family_icon,vendor,
+                                                    vendor_code,vendor_homepage,
+                                                    crawler_classification,
+                                                    crawler_classification_code,
+                                                    crawler_classification
+                                          FROM udger_ip_list
+                                          JOIN udger_ip_class ON udger_ip_class.id=udger_ip_list.class_id
+                                          LEFT JOIN udger_crawler_list ON udger_crawler_list.id=udger_ip_list.crawler_id
+                                          LEFT JOIN udger_crawler_class ON udger_crawler_class.id=udger_crawler_list.class_id";
 
-    public static readonly String SQL_DEVICE_REGEX =
-        "SELECT " +
-            "id," +
-            "regstring " +
-        "FROM " +
-            "udger_devicename_regex " +
-        "WHERE " +
-            "os_family_code='{0}' AND (os_code='-all-' OR os_code='{1}') " +
-        "ORDER BY sequence";
-
-    public static readonly String SQL_DEVICE_NAME_LIST =
-        "SELECT " +
-            "marketname," +
-            "brand_code," +
-            "brand," +
-            "brand_url," +
-            "icon," +
-            "icon_big " +
-        "FROM " +
-            "udger_devicename_list " +
-        "JOIN " +
-            "udger_devicename_brand ON udger_devicename_brand.id=udger_devicename_list.brand_id " +
-        "WHERE " +
-            "regex_id = '{0}' AND code = '{1}'";
+    public static readonly string SQL_DATACENTER_TABLE = @"SELECT 
+                                                        name, 
+                                                        name_code, 
+                                                        homepage
+                                                       FROM udger_datacenter_range
+                                                       JOIN udger_datacenter_list ON udger_datacenter_range.datacenter_id = udger_datacenter_list.id ";
     }
+    #endregion
 }

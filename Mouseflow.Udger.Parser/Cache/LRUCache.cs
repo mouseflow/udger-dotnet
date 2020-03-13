@@ -19,7 +19,6 @@ namespace Mouseflow.Udger.Parser
     class LRUCache<TKey,TValue>
     {
         private readonly ConcurrentDictionary<TKey, TValue> entries;
-        private readonly int capacity;
 
         public int CacheSize => entries.Count;
 
@@ -29,17 +28,12 @@ namespace Mouseflow.Udger.Parser
                 throw new ArgumentOutOfRangeException(
                     "capacity",
                     "Capacity should be greater than zero");
-            this.capacity = capacity;
-            if (cachePath == null) { 
+
+            if (string.IsNullOrWhiteSpace(cachePath))
                 entries = new ConcurrentDictionary<TKey, TValue>();
-            }
             else
-            {
                 entries = JsonSerializer.Deserialize<ConcurrentDictionary<TKey, TValue>>(File.ReadAllBytes(cachePath));
-            }
         }
-
-
 
         public void Set(TKey key, TValue value)
         {
@@ -55,7 +49,6 @@ namespace Mouseflow.Udger.Parser
             TValue entry;
             if (!entries.TryGetValue(key, out entry))
                 return false;
-
             value = entry;
             return true;
         }

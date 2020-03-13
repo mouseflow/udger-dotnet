@@ -10,9 +10,11 @@
   link       https://udger.com/products/local_parser
  */
 
+using System;
 using System.Data;
 using System.Data.SQLite;
 using System.Collections.Concurrent;
+using Mouseflow.Udger.Parser.Extensions;
 
 namespace Mouseflow.Udger.Parser
 {
@@ -55,23 +57,25 @@ namespace Mouseflow.Udger.Parser
                 sqlite.Close();
                 return dt;
             }
-            return new DataTable();
+            return null;
         }
 
-        public ConcurrentDictionary<string, DataRow> SelectQuery(string query, int keyRowIndex)
+        private DataTable GetDataTable(string query)
         {
             if (Connected)
             {
-                var conDir = new ConcurrentDictionary<string, DataRow>();
                 try
                 {
-                    SQLiteCommand cmd = sqlite.OpenAndReturn().CreateCommand();
-                    cmd.CommandText = query;
-                    var dt = new DataTable();
-                    var ad = new SQLiteDataAdapter(cmd).Fill(dt);
-
-                    foreach (DataRow row in dt.Rows)
-                        conDir.TryAdd(row[keyRowIndex].ToString(), row);
+                    using (SQLiteCommand cmd = sqlite.OpenAndReturn().CreateCommand())
+                    {
+                        cmd.CommandText = query;
+                        using (var dt = new DataTable())
+                        {
+                            var ad = new SQLiteDataAdapter(cmd);
+                            ad.Fill(dt);
+                            return dt;
+                        }
+                    }
                 }
                 catch (SQLiteException ex)
                 {
@@ -80,11 +84,61 @@ namespace Mouseflow.Udger.Parser
                 finally
                 {
                     sqlite.Close();
-                }               
-                return conDir;
+                }
             }
             return null;
         }
 
+        public ConcurrentDictionary<string, DataRow> SelectQuery(string query, int keyRowIndex)
+        {
+            try
+            {
+                var conDir = new ConcurrentDictionary<string, DataRow>();
+                foreach (DataRow row in GetDataTable(query).Rows)
+                    conDir.TryAdd(row[keyRowIndex].ToString(), row);
+                return conDir;
+            }
+            catch (SQLiteException ex)
+            {
+                return null;
+            }             
+        }
+
+        public ConcurrentBag<T> SelectQuery<T>(string query) where T: new ()
+        {        
+            try
+            {
+                var conBag = new ConcurrentBag<T>();
+                foreach (DataRow row in GetDataTable(query).Rows)
+                {
+                    T rowObj = row.ToObject<T>();
+                    conBag.Add(rowObj);
+                }
+                return conBag;
+            }
+            catch (SQLiteException ex)
+            {
+                return null;
+            }
+        }
+
+        public ConcurrentDictionary<string, T> SelectQuery<T>(string query, int keyIndex = 0) where T : new()
+        {
+            try
+            {
+                var conDir = new ConcurrentDictionary<string, T>();
+                foreach (DataRow row in GetDataTable(query).Rows)
+                {
+                    T rowObj = row.ToObject<T>();
+                    conDir.TryAdd(row[keyIndex].ToString(), rowObj);
+                }
+                return conDir;
+            }
+            catch (SQLiteException ex)
+            {
+                return null;
+            }
+                    
+        }
     }
 }
