@@ -19,13 +19,12 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         {
             this.output = output;
             this.parserFixture = parserFixture;
-            parser = parserFixture.InitParser(100000); // @"C:\Mouseflow\Data\UserAgents\Cache\Cache.json"
+            parser = parserFixture.InitParser(50000); // @"C:\Mouseflow\Data\UserAgents\Cache\Cache.json"
         }
 
         #region theories
         [Theory]
-        [InlineData(16), InlineData(32), InlineData(64)]
-        [InlineData(12)]
+        [InlineData(12),InlineData(16), InlineData(32), InlineData(64)]
         public void Test_16mb_UserAgents_list(int taskAmount)
         {
             output.WriteLine($"Cache size: {parser.Cache.Size}");
@@ -43,7 +42,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests
             }
             Task.WaitAll(tasks);
             output.WriteLine($"Cache size: {parser.Cache.Size}");
-            parser.Cache.SaveCache(@"C:\Mouseflow\Data\UserAgents\Cache\Cache.json");
+            parser.Cache.SaveCache(@"C:\Mouseflow\Data\UserAgents\Cache\cacheLarge.json");
         }
         #endregion
 
@@ -98,6 +97,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
             TestUserAgents(parserFixture.SafariUserAgents, "Safari");
             parser.Cache.SaveCache(@"C:\Mouseflow\Data\UserAgents\Cache\Cache.json");
+            var test = parser.Cache.GetTopN(10);
         }
 
         [Fact]

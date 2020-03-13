@@ -14,8 +14,6 @@ namespace Mouseflow.Udger.Parser
 {
     public class UserAgent
     {
-        public int Hits { get; set; }
-
         #region Properties
         [NamePosition(0, Name = "UaString")]
         public string UaString { get;   set; }

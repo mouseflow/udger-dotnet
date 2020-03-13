@@ -168,8 +168,6 @@ namespace Mouseflow.Udger.Parser
                     userAgent = new UserAgent();
                     parseUA(ua.Replace("'", "''"), ref userAgent);
                 }
-
-                userAgent.Hits++;
                 return userAgent;
             }
             return null;
