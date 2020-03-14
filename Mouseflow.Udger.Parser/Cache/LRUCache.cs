@@ -1,4 +1,4 @@
-﻿/*
+/*
   UdgerParser - Local parser lib
   
   UdgerParser class parses useragent strings based on a database downloaded from udger.com
@@ -81,9 +81,14 @@ namespace Mouseflow.Udger.Parser
             try
             {
                 var tmp = entries.Count;
-                foreach (TKey key in entries.OrderBy(x => x.Value.Hits).Take(decimal.ToInt32(tmp * flushPct)).Select(x => x.Key).ToArray())
+                var span = decimal.ToInt32(entries.Count * flushPct);
+                var entriesRemove = entries.ToArray().OrderBy(x => x.Value.Hits).Select(x => x.Key);
+                foreach (TKey key in entriesRemove)
                 {
+                    if (span == 0)
+                        break;
                     entries.TryRemove(key, out _);
+                    span--;
                 }
                 return tmp - entries.Count;
             }
