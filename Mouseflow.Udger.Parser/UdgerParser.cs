@@ -57,12 +57,15 @@ namespace Mouseflow.Udger.Parser
         private static ConcurrentDictionary<string, DataRow> conDir_IP_TABLE,conDir_IP_CLIENT;
 
 
-        public UdgerParser(bool useLRUCash = true, int LRUCashCapacity = 10000, string cachePath = null)
+        private bool runProcessDevice;
+
+        public UdgerParser(bool useLRUCash = true, int LRUCashCapacity = 10000, string cachePath = null, bool runProcessDevice = false)
         {
             dt = new DataReader();
             if (useLRUCash)
                 Cache = new LRUCache<string, UserAgent>(LRUCashCapacity, cachePath);
             UseCache = useLRUCash;
+            this.runProcessDevice = runProcessDevice;
         }
 
         public void SetDataDir(string dataDir, string fileName = null)
@@ -83,9 +86,11 @@ namespace Mouseflow.Udger.Parser
                 dt.Connect();
             InitStaticStructures();
 
+            if (runProcessDevice) { 
             conBag_DeviceName_List = dt.SelectQuery<DeviceName>(@"SELECT * FROM udger_devicename_list");
             conBag_DeviceName_Brand = dt.SelectQuery<DeviceBrand>(@"SELECT* FROM udger_devicename_brand");
             conBag_SQL_DEVICE_REGEX = dt.SelectQuery<DeviceRegex>(UdgerSqlQuery.SQL_DEVICE_REGEX);
+            }
 
             conDir_SQL_CLIENT = dt.SelectQuery<Client>(UdgerSqlQuery.SQL_CLIENT, 0);
             conDir_SQL_CRAWLER = dt.SelectQuery<Client>(UdgerSqlQuery.SQL_CRAWLER, 0);
@@ -116,11 +121,12 @@ namespace Mouseflow.Udger.Parser
                 if(client.Value.regstring != null)
                     client.Value.Reg = new PerlRegExpConverter(client.Value.regstring, "", Encoding.UTF8).Regex;
             }
-            foreach (var device in conBag_SQL_DEVICE_REGEX)
-            {
-                if (device.regstring != null)
-                    device.Reg = new PerlRegExpConverter(device.regstring, "", Encoding.UTF8).Regex;
-            }
+            if (runProcessDevice)
+                foreach (var device in conBag_SQL_DEVICE_REGEX)
+                {
+                    if (device.regstring != null)
+                        device.Reg = new PerlRegExpConverter(device.regstring, "", Encoding.UTF8).Regex;
+                }
         }
 
         private void InitStaticStructures()
@@ -206,7 +212,7 @@ namespace Mouseflow.Udger.Parser
                     //// deviceColumn
                     processDevice(userAgentString, ref client_class_id, ref userAgent);
 
-                    if (string.IsNullOrEmpty(userAgent.OsFamilyCode))
+                    if (runProcessDevice && string.IsNullOrEmpty(userAgent.OsFamilyCode))
                         processDeviceBrand(ref userAgent);
 
                     //set Cache
