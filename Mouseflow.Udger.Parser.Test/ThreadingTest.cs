@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Mouseflow.Udger.Parser.Test.Tests.Fixtures;
 using Xunit;
@@ -19,7 +17,7 @@ namespace Mouseflow.Udger.Parser.Test.Tests
         {
             this.output = output;
             this.parserFixture = parserFixture;
-            parser = parserFixture.InitParser(50000); // @"C:\Mouseflow\Data\UserAgents\Cache\Cache.json"
+            parser = parserFixture.InitParser(100000); // @"C:\Mouseflow\Data\UserAgents\Cache\Cache.json"
         }
 
         #region theories
