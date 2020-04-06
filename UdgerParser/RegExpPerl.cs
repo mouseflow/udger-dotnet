@@ -10,9 +10,6 @@
 */
 using System;
 using System.Text;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Udger.Parser
@@ -32,10 +29,6 @@ namespace Udger.Parser
         UTF8 = 16
     }
 
-    /// <summary>
-    /// Implements PERL extended regular expressions as they are implemented in PHP.
-    /// </summary>
-    /// <threadsafety static="true"/>
     #region PerlRegExpConverter
 
     /// <summary>
@@ -49,12 +42,13 @@ namespace Udger.Parser
         /// Regular expression used for matching quantifiers, they are changed ungreedy to greedy and vice versa if
         /// needed.
         /// </summary>
-        private static Regex quantifiers
+        private static Regex Quantifiers
         {
             get
             {
                 if (_quantifiers == null)
                     _quantifiers = new Regex(@"\G(?:\?|\*|\+|\{[0-9]+,[0-9]*\})");
+
                 return _quantifiers;
             }
         }
@@ -63,16 +57,17 @@ namespace Udger.Parser
         /// <summary>
         /// Regular expression for POSIX regular expression classes matching.
         /// </summary>
-        private static Regex posixCharClasses
+        private static Regex PosixCharClasses
         {
             get
             {
                 if (_posixCharClasses == null)
                     _posixCharClasses = new Regex("^\\[:(^)?(alpha|alnum|ascii|cntrl|digit|graph|lower|print|punct|space|upper|word|xdigit):]", RegexOptions.Singleline);
+
                 return _posixCharClasses;
             }
         }
-        private static Regex _posixCharClasses = null;
+        private static Regex _posixCharClasses;
 
         /// <summary>
         /// Original perl regular expression passed to the constructor.
@@ -82,32 +77,27 @@ namespace Udger.Parser
         /// <summary>
         /// Returns <see cref="Regex"/> class that can be used for matching.
         /// </summary>
-        public Regex/*!*/ Regex { get { return regex; } }
-        private Regex/*!*/ regex;
+        public Regex Regex { get; private set; }
 
         /// <summary>
-        /// .NET regular expression string. May be <B>null</B> if <see cref="regex"/> is already set.
+        /// .NET regular expression string. May be <B>null</B> if <see cref="Regex"/> is already set.
         /// </summary>
         private string dotNetMatchExpression;
 
         /// <summary>
         /// Returns .NET replacement string.
         /// </summary>
-        public string DotNetReplaceExpression { get { return dotNetReplaceExpression; } }
-        private string dotNetReplaceExpression;
+        public string DotNetReplaceExpression { get; }
 
         /// <summary>
         /// <see cref="RegexOptions"/> which should be set while matching the expression. May be <B>null</B>
-        /// if <see cref="regex"/> is already set.
+        /// if <see cref="Regex"/> is already set.
         /// </summary>
-        public RegexOptions DotNetOptions { get { return dotNetOptions; } }
-        private RegexOptions dotNetOptions;
+        public RegexOptions DotNetOptions { get; private set; } = RegexOptions.None;
 
-        public PerlRegexOptions PerlOptions { get { return perlOptions; } }
-        private PerlRegexOptions perlOptions = PerlRegexOptions.None;
+        public PerlRegexOptions PerlOptions { get; private set; } = PerlRegexOptions.None;
 
-        public Encoding/*!*/ Encoding { get { return encoding; } }
-        private readonly Encoding/*!*/ encoding;
+        public Encoding Encoding { get; }
 
         #endregion
 
@@ -119,31 +109,23 @@ namespace Udger.Parser
         /// <param name="encoding">Encoding used in the case the pattern is a binary string.</param>
         public PerlRegExpConverter(string pattern, string replacement, Encoding/*!*/ encoding)
         {
-            if (encoding == null)
-                throw new ArgumentNullException("encoding");
-
-            this.encoding = encoding;
+            Encoding = encoding
+                ?? throw new ArgumentNullException(nameof(encoding));
 
             ConvertPattern(pattern);
 
             if (replacement != null)
-                dotNetReplaceExpression = ConvertReplacement(replacement);
+                DotNetReplaceExpression = ConvertReplacement(replacement);
         }
 
         private void ConvertPattern(string pattern)
         {
-            string string_pattern = null;
-
-            string_pattern = pattern;
-
-            LoadPerlRegex(string_pattern);
-
-            dotNetMatchExpression = ConvertRegex(perlRegEx, perlOptions, encoding);
+            LoadPerlRegex(pattern);
+            dotNetMatchExpression = ConvertRegex(perlRegEx, PerlOptions, Encoding);
 
             try
             {
-               // dotNetOptions |= RegexOptions.Compiled;
-                regex = new Regex(dotNetMatchExpression, dotNetOptions);
+                Regex = new Regex(dotNetMatchExpression, DotNetOptions);
             }
             catch (ArgumentException e)
             {
@@ -157,86 +139,66 @@ namespace Udger.Parser
         /// </summary>
         private string ExtractExceptionalMessage(string message)
         {
-            if (message != null)
-            {
-                message = message.Replace(dotNetMatchExpression, "<pattern>");
+            if (message == null)
+                return message;
 
-                int i = message.IndexOf("\r\n");
-                if (i >= 0)
-                    message = message.Substring(0, i);
+            message = message.Replace(dotNetMatchExpression, "<pattern>");
 
-                i = message.IndexOf("-");
-                if (i >= 0)
-                    message = message.Substring(i + 2);
-            }
+            var i = message.IndexOf("\r\n");
+            if (i >= 0)
+                message = message.Substring(0, i);
+
+            i = message.IndexOf("-");
+            if (i >= 0)
+                message = message.Substring(i + 2);
+
             return message;
         }
 
         internal string ConvertString(string str, int start, int length)
         {
-            if ((perlOptions & PerlRegexOptions.UTF8) != 0 /*&& !StringUtils.IsAsciiString(str, start, length)*/)
-                return Encoding.UTF8.GetString(encoding.GetBytes(str.Substring(start, length)));
-            else
-                return str.Substring(start, length);
-        }
-
-        internal string ConvertBytes(byte[] bytes, int start, int length)
-        {
-            if ((perlOptions & PerlRegexOptions.UTF8) != 0)
-                return Encoding.UTF8.GetString(bytes, start, length);
-            else
-                return encoding.GetString(bytes, start, length);
-        }
-
-        private void LoadPerlRegex(byte[] pattern)
-        {
-            if (pattern == null) pattern = new byte[0];
-            int regex_start, regex_end;
-
-            StringBuilder upattern = new StringBuilder();
-            upattern.Append(pattern);
-
-            FindRegexDelimiters(upattern, out regex_start, out regex_end);
-            ParseRegexOptions(upattern, regex_end + 2, out dotNetOptions, out perlOptions);
-
-            perlRegEx = ConvertBytes(pattern, regex_start, regex_end - regex_start + 1);
+            return (PerlOptions & PerlRegexOptions.UTF8) != 0
+                ? Encoding.UTF8.GetString(Encoding.GetBytes(str.Substring(start, length)))
+                : str.Substring(start, length);
         }
 
         private void LoadPerlRegex(string pattern)
         {
-            if (pattern == null) pattern = "";
-            int regex_start, regex_end;
+            if (pattern == null)
+                pattern = "";
 
-            StringBuilder upattern = new StringBuilder();
+            var upattern = new StringBuilder();
             upattern.Append(pattern);
 
-            FindRegexDelimiters(upattern, out regex_start, out regex_end);
-            ParseRegexOptions(upattern, regex_end + 2, out dotNetOptions, out perlOptions);
+            FindRegexDelimiters(upattern, out var regexStart, out var regexEnd);
+            ParseRegexOptions(upattern, regexEnd + 2, out var dotNetOptions, out var perlOptions);
+            DotNetOptions = dotNetOptions;
+            PerlOptions = perlOptions;
 
-            perlRegEx = ConvertString(pattern, regex_start, regex_end - regex_start + 1);
+            perlRegEx = ConvertString(pattern, regexStart, regexEnd - regexStart + 1);
         }
 
-        private void FindRegexDelimiters(StringBuilder pattern, out int start, out int end)
+        private static void FindRegexDelimiters(StringBuilder pattern, out int start, out int end)
         {
-            int i = 0;
-            while (i < pattern.Length && Char.IsWhiteSpace(pattern[i])) i++;
+            var i = 0;
+            while (i < pattern.Length && char.IsWhiteSpace(pattern[i])) i++;
 
             if (i == pattern.Length)
                 throw new ArgumentException("RegExp empty");
 
-            char start_delimiter = pattern[i++];
-            if (Char.IsLetterOrDigit(start_delimiter) || start_delimiter == '\\')
+            var startDelimiter = pattern[i++];
+            if (char.IsLetterOrDigit(startDelimiter) || startDelimiter == '\\')
                 throw new ArgumentException("Something bad with delimiter");
 
             start = i;
-            char end_delimiter;
-            if (start_delimiter == '[') end_delimiter = ']';
-            else if (start_delimiter == '(') end_delimiter = ')';
-            else if (start_delimiter == '{') end_delimiter = '}';
-            else if (start_delimiter == '<') end_delimiter = '>';
-            else end_delimiter = start_delimiter;
+            char endDelimiter;
+            if (startDelimiter == '[') endDelimiter = ']';
+            else if (startDelimiter == '(') endDelimiter = ')';
+            else if (startDelimiter == '{') endDelimiter = '}';
+            else if (startDelimiter == '<') endDelimiter = '>';
+            else endDelimiter = startDelimiter;
 
-            int depth = 1;
+            var depth = 1;
             while (i < pattern.Length)
             {
                 if (pattern[i] == '\\' && i + 1 < pattern.Length)
@@ -244,15 +206,18 @@ namespace Udger.Parser
                     i += 2;
                     continue;
                 }
-                else if (pattern[i] == end_delimiter)   // (1) should precede (2) to handle end_delim == start_delim case
+
+                if (pattern[i] == endDelimiter)   // (1) should precede (2) to handle end_delim == start_delim case
                 {
                     depth--;
-                    if (depth == 0) break;
+                    if (depth == 0)
+                        break;
                 }
-                else if (pattern[i] == start_delimiter) // (2)
+                else if (pattern[i] == startDelimiter) // (2)
                 {
                     depth++;
                 }
+
                 i++;
             }
 
@@ -268,9 +233,9 @@ namespace Udger.Parser
             dotNetOptions = RegexOptions.None;
             extraOptions = PerlRegexOptions.None;
 
-            for (int i = start; i < pattern.Length; i++)
+            for (var i = start; i < pattern.Length; i++)
             {
-                char option = pattern[i];
+                var option = pattern[i];
 
                 switch (option)
                 {
@@ -312,23 +277,12 @@ namespace Udger.Parser
                     case 'u': // PCRE_UTF8
                         extraOptions |= PerlRegexOptions.UTF8;
                         break;
-                    /*
-                    case 'X': // PCRE_EXTRA
-                        throw new Exception("Modifier not supported");
-                       
-            
-                    default:
-                        throw new Exception("Modifier unknown");
-                    */   
                 }
             }
 
             // inconsistent options check:
-            if
-            (
-              (dotNetOptions & RegexOptions.Multiline) != 0 &&
-              (extraOptions & PerlRegexOptions.DollarMatchesEndOfStringOnly) != 0
-            )
+            if ((dotNetOptions & RegexOptions.Multiline) != 0 &&
+                (extraOptions & PerlRegexOptions.DollarMatchesEndOfStringOnly) != 0)
             {
                 throw new Exception("Modifier inconsistent");
             }
@@ -370,38 +324,41 @@ namespace Udger.Parser
                     return 14;
                 case 'F':
                     return 15;
-
+                default:
+                    return 17;
             }
-
-            return 17;
         }
 
         /// <summary>
         /// Parses escaped sequences: "\[xX][0-9A-Fa-f]{2}", "\[xX]\{[0-9A-Fa-f]{0,4}\}", "\[0-7]{3}", 
         /// "\[pP]{Unicode Category}"
         /// </summary>
-        private static bool ParseEscapeCode(Encoding/*!*/ encoding, string/*!*/ str, ref int pos, ref char ch, ref bool escaped)
+        private static bool ParseEscapeCode(Encoding encoding, string str, ref int pos, ref char ch, ref bool escaped)
         {
-            //Debug.Assert(encoding != null && str != null && pos >= 0 && pos < str.Length && str[pos] == '\\');
+            if (pos + 3 >= str.Length)
+                return false;
 
-            if (pos + 3 >= str.Length) return false;
-
-            int number = 0;
+            var number = 0;
 
             if (str[pos + 1] == 'x')
             {
                 if (str[pos + 2] == '{')
                 {
                     // hexadecimal number encoding a Unicode character:
-                    int i = pos + 3;
-                    while (i < str.Length && str[i] != '}' && number < Char.MaxValue)
+                    var i = pos + 3;
+                    while (i < str.Length && str[i] != '}' && number < char.MaxValue)
                     {
-                        int digit = AlphaNumericToDigit(str[i]);
-                        if (digit > 16) return false;
+                        var digit = AlphaNumericToDigit(str[i]);
+                        if (digit > 16)
+                            return false;
+
                         number = (number << 4) + digit;
                         i++;
                     }
-                    if (number > Char.MaxValue || i >= str.Length) return false;
+
+                    if (number > char.MaxValue || i >= str.Length)
+                        return false;
+
                     pos = i;
                     ch = (char)number;
                     escaped = IsCharRegexSpecial(ch);
@@ -409,70 +366,68 @@ namespace Udger.Parser
                 else
                 {
                     // hexadecimal number encoding single-byte character:
-                    for (int i = pos + 2; i < pos + 4; i++)
+                    for (var i = pos + 2; i < pos + 4; i++)
                     {
                         //Debug.Assert(i < str.Length);
-                        int digit = AlphaNumericToDigit(str[i]);
-                        if (digit > 16) return false;
+                        var digit = AlphaNumericToDigit(str[i]);
+                        if (digit > 16)
+                            return false;
+
                         number = (number << 4) + digit;
                     }
+
                     pos += 3;
-                    char[] chars = encoding.GetChars(new byte[] { (byte)number });
+
+                    var chars = encoding.GetChars(new[] { (byte)number });
                     if (chars.Length == 1)
                         ch = chars[0];
                     else
                         ch = (char)number;
+
                     escaped = IsCharRegexSpecial(ch);
                 }
+
                 return true;
             }
-            else if (str[pos + 1] >= '0' && str[pos + 1] <= '7')
+
+            if (str[pos + 1] >= '0' && str[pos + 1] <= '7')
             {
                 // octal number:
-                for (int i = pos + 1; i < pos + 4; i++)
+                for (var i = pos + 1; i < pos + 4; i++)
                 {
                     //Debug.Assert(i < str.Length);
-                    int digit = AlphaNumericToDigit(str[i]);
+                    var digit = AlphaNumericToDigit(str[i]);
                     if (digit > 8) return false;
                     number = (number << 3) + digit;
                 }
                 pos += 3;
-                ch = encoding.GetChars(new byte[] { (byte)number })[0];
+                ch = encoding.GetChars(new[] { (byte)number })[0];
                 escaped = IsCharRegexSpecial(ch);
+
                 return true;
             }
-            else if (str[pos + 1] == 'p' || str[pos + 1] == 'P')
+
+            if (str[pos + 1] == 'p' || str[pos + 1] == 'P')
             {
-                bool complement = str[pos + 1] == 'P';
-                int cat_start;
+                var complement = str[pos + 1] == 'P';
+                int catStart;
 
                 if (str[pos + 2] == '{')
                 {
-                    if (!complement && str[pos + 3] == '^')
-                    {
-                        complement = true;
-                        cat_start = pos + 4;
-                    }
-                    else
-                        cat_start = pos + 3;
+                    catStart = !complement && str[pos + 3] == '^'
+                        ? pos + 4
+                        : pos + 3;
                 }
                 else
                 {
-                    cat_start = pos + 2;
+                    catStart = pos + 2;
                 }
 
-                //UnicodeCategoryGroup group;
-                //UnicodeCategory category;
-
-                //int cat_length = StringUtils.ParseUnicodeDesignation(str, cat_start, out group, out category);
-                int cat_length = str.Length;
-                int cat_end = cat_start + cat_length - 1;
-
-                // unknown category:
-                //if (cat_length == 0) return false;
+                var catLength = str.Length;
+                var catEnd = catStart + catLength - 1;
 
                 // check closing brace:
-                if (str[pos + 2] == '{' && (cat_end + 1 >= str.Length || str[cat_end + 1] != '}'))
+                if (str[pos + 2] == '{' && (catEnd + 1 >= str.Length || str[catEnd + 1] != '}'))
                     return false;
 
                 // TODO: custom categories on .NET 2?
@@ -480,10 +435,9 @@ namespace Udger.Parser
                 // ?? if (complement) pos = pos;
                 return false;
             }
-            else if (str[pos + 1] == 'X')
-            {
+
+            if (str[pos + 1] == 'X')
                 return false;
-            }
 
             return false;
         }
@@ -491,7 +445,7 @@ namespace Udger.Parser
         /// <summary>
         /// Characters that must be encoded in .NET regexp
         /// </summary>
-        static char[] encodeChars = new char[] { '.', '$', '(', ')', '*', '+', '?', '[', ']', '{', '}', '\\', '^', '|' };
+        static char[] encodeChars = { '.', '$', '(', ')', '*', '+', '?', '[', ']', '{', '}', '\\', '^', '|' };
 
         /// <summary>
         /// Returns true if character needs to be escaped in .NET regex
@@ -500,7 +454,6 @@ namespace Udger.Parser
         {
             return Array.IndexOf(encodeChars, ch) != -1;
         }
-
 
         /// <summary>
         /// Converts Perl match expression (only, without delimiters, options etc.) to .NET regular expression.
@@ -515,7 +468,7 @@ namespace Udger.Parser
 
             // assume no conversion will be performed, create string builder with exact length. Only in
             // case there is a range StringBuilder would be prolonged, +1 for Anchored
-            StringBuilder result = new StringBuilder(perlExpr.Length + 1);
+            var result = new StringBuilder(perlExpr.Length + 1);
 
             // Anchored means that the string should match only at the start of the string, add '^'
             // at the beginning if there is no one
@@ -524,22 +477,21 @@ namespace Udger.Parser
 
             // set to true after a quantifier is matched, if there is second quantifier just behind the
             // first it is an error
-            bool last_quantifier = false;
+            var lastQuantifier = false;
 
             // 4 means we're switching from 3 back to 2 - ie. "a-b-c" 
             // (we need to make a difference here because second "-" shouldn't be expanded)
-            bool leaving_range = false;
+            var leavingRange = false;
 
-            bool escaped = false;
-            int state = 0;
-            int group_state = 0;
+            var state = 0;
+            var groupState = 0;
 
-            int i = 0;
+            var i = 0;
             while (i < perlExpr.Length)
             {
-                char ch = perlExpr[i];
+                var ch = perlExpr[i];
 
-                escaped = false;
+                var escaped = false;
                 if (ch == '\\' && !ParseEscapeCode(encoding, perlExpr, ref i, ref ch, ref escaped))
                 {
                     i++;
@@ -547,7 +499,7 @@ namespace Udger.Parser
                     ch = perlExpr[i];
 
                     // some characters (like '_') don't need to be escaped in .net
-                    if (ch == '_') escaped = false; else escaped = true;
+                    escaped = ch != '_';
                 }
 
                 switch (state)
@@ -557,29 +509,29 @@ namespace Udger.Parser
                         {
                             result.Append('\\');
                             result.Append(ch);
-                            last_quantifier = false;
+                            lastQuantifier = false;
                             break;
                         }
 
                         // In perl regexps, named groups are written like this: "(?P<name> ... )"
                         // If the group is starting here, we need to skip the 'P' character (see state 4)
-                        switch (group_state)
+                        switch (groupState)
                         {
-                            case 0: group_state = (ch == '(') ? 1 : 0; break;
-                            case 1: group_state = (ch == '?') ? 2 : 0; break;
+                            case 0: groupState = (ch == '(') ? 1 : 0; break;
+                            case 1: groupState = (ch == '?') ? 2 : 0; break;
                             case 2: if (ch == 'P') { i++; continue; } break;
                         }
 
                         if ((opt & PerlRegexOptions.Ungreedy) != 0)
                         {
                             // match quantifier ?,*,+,{n,m} at the position i:
-                            Match m = quantifiers.Match(perlExpr, i);
+                            var m = Quantifiers.Match(perlExpr, i);
 
                             // quantifier matched; quentifier '?' hasn't to be preceded by '(' - a grouping construct '(?'
                             if (m.Success && (m.Value != "?" || i == 0 || perlExpr[i - 1] != '('))
                             {
                                 // two quantifiers: 
-                                if (last_quantifier)
+                                if (lastQuantifier)
                                     throw new ArgumentException("regexp_duplicate_quantifier");
 
                                 // append quantifier:
@@ -610,12 +562,12 @@ namespace Udger.Parser
                                         result.Append('?');
                                 }
 
-                                last_quantifier = true;
+                                lastQuantifier = true;
                                 continue;
                             }
                         }
 
-                        last_quantifier = false;
+                        lastQuantifier = false;
 
                         if (ch == '$' && (opt & PerlRegexOptions.DollarMatchesEndOfStringOnly) != 0)
                         {
@@ -658,27 +610,27 @@ namespace Udger.Parser
                         {
                             result.Append('\\');
                             result.Append(ch);
-                            leaving_range = false;
+                            leavingRange = false;
                             break;
                         }
 
-                        if (ch == '-' && !leaving_range)
+                        if (ch == '-' && !leavingRange)
                         {
                             state = 3;
                             break;
                         }
-                        leaving_range = false;
+                        leavingRange = false;
 
                         // posix character classes
-                        Match match = posixCharClasses.Match(perlExpr.Substring(i), 0);
+                        var match = PosixCharClasses.Match(perlExpr.Substring(i), 0);
                         if (match.Success)
                         {
-                            string chars = CountCharacterClass(match.Groups[2].Value);
+                            var chars = CountCharacterClass(match.Groups[2].Value);
                             if (chars == null)
-                                throw new ArgumentException(/*TODO*/ String.Format("Unknown character class '{0}'", match.Groups[2].Value));
+                                throw new ArgumentException($"Unknown character class '{match.Groups[2].Value}'");
 
                             if (match.Groups[1].Value.Length > 0)
-                                throw new ArgumentException(/*TODO*/ "POSIX character classes negation not supported.");
+                                throw new ArgumentException("POSIX character classes negation not supported.");
 
                             result.Append(chars);
                             i += match.Length - 1; // +1 is added just behind the switch
@@ -701,19 +653,14 @@ namespace Udger.Parser
                             break;
                         }
 
-                        string range;
-                        int error;
-                        if (!CountRange(result[result.Length - 1], ch, out range, out error, encoding))
+                        if (!CountRange(result[result.Length - 1], ch, out var range, out var error, encoding))
                         {
-                            if ((error != 1) || (!CountUnicodeRange(result[result.Length - 1], ch, out range)))
-                            {
-                                //Debug.Assert(error == 2);
+                            if (error != 1 || !CountUnicodeRange(result[result.Length - 1], ch, out range))
                                 throw new ArgumentException("range_first_character_greater");
-                            }
                         }
                         result.Append(EscapeBracketExpressionSpecialChars(range)); // left boundary is duplicated, but doesn't matter...
                         state = 2;
-                        leaving_range = true;
+                        leavingRange = true;
                         break;
                 }
 
@@ -730,11 +677,10 @@ namespace Udger.Parser
         /// <returns>String with escaped characters.</returns>
         internal static string EscapeBracketExpressionSpecialChars(string chars)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
-            for (int i = 0; i < chars.Length; i++)
+            foreach (var ch in chars)
             {
-                char ch = chars[i];
                 switch (ch)
                 {
                     // case '^': // not necessary, not at the beginning have no special meaning
@@ -768,30 +714,30 @@ namespace Udger.Parser
             characters = null;
             result = 0;
 
-            char[] chars = new char[2];
+            var chars = new char[2];
             chars[0] = firstCharacter;
             chars[1] = secondCharacter;
 
-            byte[] two_bytes = new byte[encoding.GetMaxByteCount(2)];
+            byte[] twoBytes = new byte[encoding.GetMaxByteCount(2)];
 
             // convert endpoints and test if characters are "normal" - they can be stored in one byte
-            if (encoding.GetBytes(chars, 0, 2, two_bytes, 0) != 2)
+            if (encoding.GetBytes(chars, 0, 2, twoBytes, 0) != 2)
             {
                 result = 1;
                 return false;
             }
 
-            if (two_bytes[0] > two_bytes[1])
+            if (twoBytes[0] > twoBytes[1])
             {
                 result = 2;
                 return false;
             }
 
             // array for bytes that will be converted to unicode string
-            byte[] bytes = new byte[two_bytes[1] - two_bytes[0] + 1];
+            var bytes = new byte[twoBytes[1] - twoBytes[0] + 1];
 
-            int i = 0;
-            for (int ch = two_bytes[0]; ch <= two_bytes[1]; i++, ch++)
+            var i = 0;
+            for (int ch = twoBytes[0]; ch <= twoBytes[1]; i++, ch++)
             {
                 // casting to byte is OK, ch is always in byte range thanks to ch <= two_bytes[1] condition
                 bytes[i] = (byte)ch;
@@ -871,40 +817,30 @@ namespace Udger.Parser
         private static bool CountUnicodeRange(char f, char t, out string range)
         {
             range = "";
-            if (f > t) return false;
-            StringBuilder sb = new StringBuilder(t - f);
-            for (char c = f; c <= t; c++) sb.Append(c);
+            if (f > t)
+                return false;
+
+            var sb = new StringBuilder(t - f);
+            for (var c = f; c <= t; c++)
+                sb.Append(c);
+
             range = sb.ToString();
+
             return true;
-        }
-
-
-        /// <summary>
-        /// Modifies regular expression so it matches only at the beginning of the string.
-        /// </summary>
-        /// <param name="expr">Regular expression to modify.</param>
-        private static void ModifyRegExpAnchored(ref string expr)
-        {
-            // anchored means regular expression should match only at the beginning of the string
-            // => add ^ at the beginning if there is no one.
-            if (expr.Length == 0 || expr[0] != '^')
-                expr.Insert(0, "^");
         }
 
         internal static bool IsDigitGroupReference(string replacement, int i)
         {
             return (replacement[i] == '$' || replacement[i] == '\\') &&
-              (i + 1 < replacement.Length && Char.IsDigit(replacement, i + 1));
+              (i + 1 < replacement.Length && char.IsDigit(replacement, i + 1));
         }
 
         internal static bool IsParenthesizedGroupReference(string replacement, int i)
         {
             return replacement[i] == '$' && i + 3 < replacement.Length && replacement[i + 1] == '{' &&
-              Char.IsDigit(replacement, i + 2) &&
-                (
+                char.IsDigit(replacement, i + 2) && (
                     replacement[i + 3] == '}' ||
-                    i + 4 < replacement.Length && replacement[i + 4] == '}' && Char.IsDigit(replacement, i + 3)
-              );
+                    i + 4 < replacement.Length && replacement[i + 4] == '}' && char.IsDigit(replacement, i + 3));
         }
 
         /// <summary>
@@ -914,30 +850,29 @@ namespace Udger.Parser
         /// <returns>String with converted $xx substitution format.</returns>
         private string ConvertReplacement(string replacement)
         {
-            StringBuilder result = new StringBuilder();
-            int[] group_numbers = regex.GetGroupNumbers();
-            int max_number = (group_numbers.Length > 0) ? group_numbers[group_numbers.Length - 1] : 0;
+            var result = new StringBuilder();
+            var groupNumbers = Regex.GetGroupNumbers();
+            var maxNumber = groupNumbers.Length > 0 ? groupNumbers[groupNumbers.Length - 1] : 0;
 
-            int i = 0;
+            var i = 0;
             while (i < replacement.Length)
             {
-                if (IsDigitGroupReference(replacement, i) ||
-                  IsParenthesizedGroupReference(replacement, i))
+                if (IsDigitGroupReference(replacement, i) || IsParenthesizedGroupReference(replacement, i))
                 {
-                    int add = 0;
+                    var add = 0;
                     i++;
 
                     if (replacement[i] == '{') { i++; add = 1; }
 
-                    int number = replacement[i++] - '0';
-                    if (i < replacement.Length && Char.IsDigit(replacement, i))
+                    var number = replacement[i++] - '0';
+                    if (i < replacement.Length && char.IsDigit(replacement, i))
                     {
                         number = number * 10 + replacement[i];
                         i++;
                     }
 
                     // insert only existing group references (others replaced with empty string):
-                    if (number <= max_number)
+                    if (number <= maxNumber)
                     {
                         result.Append('$');
                         result.Append('{');
@@ -977,7 +912,6 @@ namespace Udger.Parser
 
             return result.ToString();
         }
-
     }
 
     #endregion

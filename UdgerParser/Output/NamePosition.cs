@@ -14,7 +14,6 @@ using System;
 
 namespace Udger.Parser
 {
-
     [AttributeUsage(AttributeTargets.Property)]
     public class NamePositionAttribute : Attribute
     {
@@ -26,5 +25,4 @@ namespace Udger.Parser
             Position = position;
         }
     }
-    
 }

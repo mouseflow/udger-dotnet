@@ -134,7 +134,6 @@ namespace DataTest
                 */
                 if (setNullEmpty(i.IpVer) != Convert.ToString(x.ret.ip_ver))
                     Console.WriteLine("err IpVer: " + i.IpVer);
-
             }
             #endregion
 
@@ -280,7 +279,6 @@ namespace DataTest
 
                 if (setNullEmpty(a.UaVersionMajor) != Convert.ToString(x.ret.ua_version_major))
                     Console.WriteLine("err UaVersionMajor: " + a.UaVersionMajor);              
-
             }
             #endregion
             Console.ReadLine();           
@@ -295,6 +293,5 @@ namespace DataTest
             return x;
         }
         #endregion
-
     }
 }

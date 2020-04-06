@@ -18,31 +18,19 @@ namespace Udger.Parser
 {
     class DataReader
     {
-
         public string DataSourcePath { get; set; }
-        private bool connected;
-        public bool Connected { get { return this.connected; } }
+        public bool Connected { get; private set; }
         private SQLiteConnection sqlite;
-        public string data_filenam { get; set; }
         public string data_dir { get; set; }
-        UdgerParser udger;
-
-
-        public DataReader()
-        {
-
-        }
 
         public void connect(UdgerParser _udger)
         {
-            udger = _udger;
             try
             { 
                 if (!this.Connected)
-                {                   
+                {
                     sqlite = new SQLiteConnection(@"Data Source=" + DataSourcePath);
-                    this.connected = true;
-                    
+                    Connected = true;
                 }
             }
             catch (Exception e)
@@ -53,30 +41,20 @@ namespace Udger.Parser
 
         public DataTable selectQuery(string query)
         {
-            if (connected)
-            {
-                SQLiteDataAdapter ad;
-                DataTable dt = new DataTable();
+            if (!Connected)
+                return new DataTable();
 
-                try
-                {
-                    SQLiteCommand cmd;
-                    sqlite.Open();  //Initiate connection to the db
-                    cmd = sqlite.CreateCommand();
-                    cmd.CommandText = query;  //set the passed query
-                    ad = new SQLiteDataAdapter(cmd);
-                    ad.Fill(dt); //fill the datasource
-                }
-                catch (SQLiteException ex)
-                {
-                    throw ex;
-                }
-                sqlite.Close();
-                return dt;
-            }
-            return new DataTable();
+            sqlite.Open();
+
+            var cmd = sqlite.CreateCommand();
+            cmd.CommandText = query;
+            var dt = new DataTable();
+            var ad = new SQLiteDataAdapter(cmd);
+            ad.Fill(dt);
+
+            sqlite.Close();
+
+            return dt;
         }
-
-
     }
 }

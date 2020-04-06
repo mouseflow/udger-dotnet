@@ -30,24 +30,19 @@ namespace Udger.Parser
             public TValue Value { get; set; }
         }
 
-        #region Constructor
         public LRUCache(int capacity)
         {
             if (capacity <= 0)
-                throw new ArgumentOutOfRangeException(
-                    "capacity",
-                    "Capacity should be greater than zero");
+                throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be greater than zero");
+
             this.capacity = capacity;
             entries = new Dictionary<TKey, Node>();
             head = null;
         }
-        #endregion
 
-        #region public method    
         public void Set(TKey key, TValue value)
         {
-            Node entry;
-            if (!entries.TryGetValue(key, out entry))
+            if (!entries.TryGetValue(key, out var entry))
             {
                 entry = new Node { Key = key, Value = value };
                 if (entries.Count == capacity)
@@ -62,15 +57,15 @@ namespace Udger.Parser
 
             entry.Value = value;
             MoveToHead(entry);
+
             if (tail == null)
                 tail = head;
         }
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            value = default(TValue);
-            Node entry;
-            if (!entries.TryGetValue(key, out entry))
+            value = default;
+            if (!entries.TryGetValue(key, out var entry))
                 return false;
 
             MoveToHead(entry);
@@ -78,9 +73,7 @@ namespace Udger.Parser
 
             return true;
         }
-        #endregion
 
-        #region private method
         private void MoveToHead(Node entry)
         {
             if (entry == head || entry == null)
@@ -106,6 +99,5 @@ namespace Udger.Parser
             if (tail == entry)
                 tail = previous;
         }
-        #endregion
     }
 }

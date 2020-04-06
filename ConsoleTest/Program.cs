@@ -19,10 +19,8 @@ namespace ConsoleTest
 {
     class Program
     {
-
         static void Main(string[] args)
         {
-
             Udger.Parser.UserAgent a;
             Udger.Parser.IPAddress i;
 
@@ -58,9 +56,6 @@ namespace ConsoleTest
             parser.ip = "2a02:598:111::9";
             parser.parse();
             i = parser.ipAddress;
-
         }
-
-
     }
 }
