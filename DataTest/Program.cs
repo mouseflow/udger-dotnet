@@ -22,7 +22,7 @@ namespace DataTest
         static void Main(string[] args)
         {
             Udger.Parser.UserAgent a;
-            Udger.Parser.IPAddress i;
+            Udger.Parser.IpAddress i;
             WebClient client;
             string jsonString;
             dynamic jsonResult;
@@ -50,9 +50,9 @@ namespace DataTest
             foreach (dynamic x in jsonResult)
             {
                 Console.WriteLine("test IP: " + x.test.teststring);
-                parser.ip = Convert.ToString(x.test.teststring);
-                parser.parse();
-                i = parser.ipAddress;
+                parser.Ip = Convert.ToString(x.test.teststring);
+                parser.Parse();
+                i = parser.IpAddress;
 
                 if (setNullEmpty(i.CrawlerCategory) != Convert.ToString(x.ret.crawler_category))
                     Console.WriteLine("err CrawlerCategory: " + i.CrawlerCategory);
@@ -144,9 +144,9 @@ namespace DataTest
             foreach (dynamic x in jsonResult)
             {
                 Console.WriteLine("test UA: " + x.test.teststring);
-                parser.ua = Convert.ToString(x.test.teststring);
-                parser.parse();
-                a = parser.userAgent;
+                parser.Ua = Convert.ToString(x.test.teststring);
+                parser.Parse();
+                a = parser.UserAgent;
 
                 if (setNullEmpty(a.CrawlerCategory) != Convert.ToString(x.ret.crawler_category))
                     Console.WriteLine("err CrawlerCategory: " + a.CrawlerCategory);

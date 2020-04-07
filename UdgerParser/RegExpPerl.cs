@@ -445,14 +445,14 @@ namespace Udger.Parser
         /// <summary>
         /// Characters that must be encoded in .NET regexp
         /// </summary>
-        static char[] encodeChars = { '.', '$', '(', ')', '*', '+', '?', '[', ']', '{', '}', '\\', '^', '|' };
+        static readonly char[] EncodeChars = { '.', '$', '(', ')', '*', '+', '?', '[', ']', '{', '}', '\\', '^', '|' };
 
         /// <summary>
         /// Returns true if character needs to be escaped in .NET regex
         /// </summary>
         private static bool IsCharRegexSpecial(char ch)
         {
-            return Array.IndexOf(encodeChars, ch) != -1;
+            return Array.IndexOf(EncodeChars, ch) != -1;
         }
 
         /// <summary>

@@ -43,7 +43,7 @@
   <ItemGroup>
     <Compile Include="DataReader.cs" />
     <Compile Include="LRUCache.cs" />
-    <Compile Include="Output\IPAddress.cs" />
+    <Compile Include="Output\IpAddress.cs" />
     <Compile Include="Output\NamePosition.cs" />
     <Compile Include="RegExpPerl.cs" />
     <Compile Include="UdgerParser.cs" />

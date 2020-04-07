@@ -22,7 +22,7 @@ namespace ConsoleTest
         static void Main(string[] args)
         {
             Udger.Parser.UserAgent a;
-            Udger.Parser.IPAddress i;
+            Udger.Parser.IpAddress i;
 
             // Create a new UdgerParser object
             UdgerParser parser = new UdgerParser();
@@ -37,25 +37,25 @@ namespace ConsoleTest
             //parser.SetDataDir(@"C:\udger", "udgerdb_v3-noip.dat ");
 
             // Set user agent and /or IP address
-            parser.ua = @"Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)";
-            parser.ip = "77.75.74.35";
+            parser.Ua = @"Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)";
+            parser.Ip = "77.75.74.35";
 
             // Parse
-            parser.parse();
+            parser.Parse();
             
             // Get information 
-            a = parser.userAgent;
-            i = parser.ipAddress;
+            a = parser.UserAgent;
+            i = parser.IpAddress;
 
             // Set user agent and /or IP address
-            parser.ua = @"Mozilla/5.0 (Linux; U; Android 4.0.4; sk-sk; Luna TAB474 Build/LunaTAB474) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30";
-            parser.parse();
-            a = parser.userAgent;
+            parser.Ua = @"Mozilla/5.0 (Linux; U; Android 4.0.4; sk-sk; Luna TAB474 Build/LunaTAB474) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30";
+            parser.Parse();
+            a = parser.UserAgent;
 
 
-            parser.ip = "2a02:598:111::9";
-            parser.parse();
-            i = parser.ipAddress;
+            parser.Ip = "2a02:598:111::9";
+            parser.Parse();
+            i = parser.IpAddress;
         }
     }
 }

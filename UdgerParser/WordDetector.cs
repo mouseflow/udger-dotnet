@@ -18,13 +18,13 @@ namespace Udger.Parser
     {
         private struct WordInfo
         {
-            public int id { get; }
-            public string word { get; }
+            public int Id { get; }
+            public string Word { get; }
 
             public WordInfo(int id, string word)
             {
-                this.id = id;
-                this.word = word;
+                Id = id;
+                Word = word;
             }
         }
 
@@ -39,7 +39,7 @@ namespace Udger.Parser
             wordArray = new List<WordInfo>[ARRAY_SIZE];
         }
 
-        public void addWord(int id, string word)
+        public void AddWord(int id, string word)
         {
             if (word.Length < minWordSize)
                 minWordSize = word.Length;
@@ -58,7 +58,7 @@ namespace Udger.Parser
             wList.Add(new WordInfo(id, s));
         }
 
-        public HashSet<int> findWords(string text)
+        public HashSet<int> FindWords(string text)
         {
             var ret = new HashSet<int>();
 
@@ -78,8 +78,8 @@ namespace Udger.Parser
 
                 foreach (var wi in l)
                 {
-                    if (s.Substring(i).StartsWith(wi.word))
-                        ret.Add(wi.id);
+                    if (s.Substring(i).StartsWith(wi.Word))
+                        ret.Add(wi.Id);
                 }
             }
 

@@ -12,7 +12,7 @@
 
 namespace Udger.Parser
 {
-    public class IPAddress
+    public class IpAddress
     {
         public string Ip { get; set; }
         public string IpVer { get; set; }
