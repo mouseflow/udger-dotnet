@@ -225,7 +225,7 @@ namespace Udger.Parser
             var userAgentRs = dt.SelectQuery(q);
             if (userAgentRs != null && userAgentRs.Rows.Count > 0 )
             {
-                PrepareUa(userAgentRs.Rows[0],true, ref clientId, ref classId);
+                PrepareUa(userAgentRs.Rows[0], true, ref clientId, ref classId);
                 classId = 99;
                 clientId = -1;
             }
@@ -250,7 +250,7 @@ namespace Udger.Parser
             var rowId = FindIdFromList(uaString, deviceWordDetector.FindWords(uaString), deviceRegstringList);
             if (rowId != -1)
             {
-                var devRs = dt.SelectQuery(String.Format(UdgerSqlQuery.SQL_DEVICE, rowId));
+                var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE, rowId));
                 PrepareDevice(devRs.Rows[0]);
             }
             else
@@ -266,9 +266,6 @@ namespace Udger.Parser
 
         private void ProcessDeviceBrand()
         {
-            Regex reg;
-            PerlRegExpConverter regConv;
-
             var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_REGEX, UserAgent.OsFamilyCode, UserAgent.OsCode));
             if (devRs == null || devRs.Rows.Count <= 0)
                 return;
@@ -280,8 +277,8 @@ namespace Udger.Parser
                 if (devId == null || regex == null)
                     continue;
 
-                regConv = new PerlRegExpConverter(regex, "", Encoding.UTF8);
-                reg = regConv.Regex;
+                var regConv = new PerlRegExpConverter(regex, "", Encoding.UTF8);
+                var reg = regConv.Regex;
                 if (!reg.IsMatch(Ua))
                     continue;
 
