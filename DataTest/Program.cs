@@ -21,8 +21,8 @@ namespace DataTest
     {
         static void Main(string[] args)
         {
-            Udger.Parser.UserAgent a;
-            Udger.Parser.IpAddress i;
+            UserAgent a;
+            IpAddress i;
             WebClient client;
             string jsonString;
             dynamic jsonResult;
@@ -30,6 +30,7 @@ namespace DataTest
 
             #region Download test data
             Console.WriteLine("download test data from github");
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
             client = new WebClient();
             client.DownloadFile("https://github.com/udger/test-data/blob/master/data_v3/udgerdb_v3.dat?raw=true", tempPath + "udgerdb_v3.dat");
             client.DownloadFile("https://raw.githubusercontent.com/udger/test-data/master/data_v3/test_ua.json", tempPath + "test_ua.json");
@@ -50,9 +51,7 @@ namespace DataTest
             foreach (dynamic x in jsonResult)
             {
                 Console.WriteLine("test IP: " + x.test.teststring);
-                parser.Ip = Convert.ToString(x.test.teststring);
-                parser.Parse();
-                i = parser.IpAddress;
+                i = parser.ParseIpAddress(Convert.ToString(x.test.teststring));
 
                 if (setNullEmpty(i.CrawlerCategory) != Convert.ToString(x.ret.crawler_category))
                     Console.WriteLine("err CrawlerCategory: " + i.CrawlerCategory);
@@ -144,9 +143,7 @@ namespace DataTest
             foreach (dynamic x in jsonResult)
             {
                 Console.WriteLine("test UA: " + x.test.teststring);
-                parser.Ua = Convert.ToString(x.test.teststring);
-                parser.Parse();
-                a = parser.UserAgent;
+                a = parser.ParseUserAgent(Convert.ToString(x.test.teststring));
 
                 if (setNullEmpty(a.CrawlerCategory) != Convert.ToString(x.ret.crawler_category))
                     Console.WriteLine("err CrawlerCategory: " + a.CrawlerCategory);

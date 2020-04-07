@@ -9,9 +9,6 @@
 */
 
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Udger.Parser;
 
 
@@ -21,11 +18,11 @@ namespace ConsoleTest
     {
         static void Main(string[] args)
         {
-            Udger.Parser.UserAgent a;
-            Udger.Parser.IpAddress i;
+            UserAgent a;
+            IpAddress i;
 
             // Create a new UdgerParser object
-            UdgerParser parser = new UdgerParser();
+            var parser = new UdgerParser();
             // orCreate and set LRU Cache capacity
             //UdgerParser parser = new UdgerParser(5000);
 
@@ -36,26 +33,13 @@ namespace ConsoleTest
             // or set data dir and DB filename
             //parser.SetDataDir(@"C:\udger", "udgerdb_v3-noip.dat ");
 
-            // Set user agent and /or IP address
-            parser.Ua = @"Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)";
-            parser.Ip = "77.75.74.35";
+            // Parse user agent and IP address
+            a = parser.ParseUserAgent(@"Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)");
+            i = parser.ParseIpAddress("77.75.74.35");
 
-            // Parse
-            parser.Parse();
-            
-            // Get information 
-            a = parser.UserAgent;
-            i = parser.IpAddress;
-
-            // Set user agent and /or IP address
-            parser.Ua = @"Mozilla/5.0 (Linux; U; Android 4.0.4; sk-sk; Luna TAB474 Build/LunaTAB474) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30";
-            parser.Parse();
-            a = parser.UserAgent;
-
-
-            parser.Ip = "2a02:598:111::9";
-            parser.Parse();
-            i = parser.IpAddress;
+            // Parse user agent and IP address
+            a = parser.ParseUserAgent(@"Mozilla/5.0 (Linux; U; Android 4.0.4; sk-sk; Luna TAB474 Build/LunaTAB474) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30");
+            i = parser.ParseIpAddress("2a02:598:111::9");
         }
     }
 }

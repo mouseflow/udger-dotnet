@@ -29,9 +29,6 @@ namespace Udger.Parser
         public UserAgent UserAgent { get; private set; }
         public IpAddress IpAddress { get; private set; }
 
-        public string Ip { get; set; }
-        public string Ua { get; set; }
-
         #region private Variables
         private struct IdRegString
         {
@@ -62,8 +59,6 @@ namespace Udger.Parser
         public UdgerParser(bool useLRUCache = true, int cacheCapacity = 10000)
         {
             dt = new DataReader();
-            Ua = "";
-            Ip = "";
             useCache = useLRUCache;
             if (useLRUCache)
                 cache = new LRUCache<string, UserAgent>(cacheCapacity);
@@ -93,65 +88,75 @@ namespace Udger.Parser
         /// <summary>
         /// Parse the useragent string and/or ip address
         /// /// </summary>
-        public void Parse()
+        public UserAgent ParseUserAgent(string ua)
         {
-            IpAddress = new IpAddress();
             UserAgent = new UserAgent();
 
             dt.Connect();
             InitStaticStructures(dt);
             if (!dt.Connected)
-                return;
+                return null;
 
-            if (Ua != "")
-            {
-                if (useCache && cache.TryGetValue(Ua, out var uaCache))
-                {
-                    UserAgent = uaCache;
-                }
-                else
-                {
-                    ParseUa(Ua.Replace("'", "''"));
-                    Ua = "";
-                }
-            }
+            if (ua == "")
+                return null;
 
-            if (Ip == "")
-                return;
+            if (useCache && cache.TryGetValue(ua, out var uaCache))
+                UserAgent = uaCache;
+            else
+                ParseUa(ua.Replace("'", "''"));
 
-            ParseIp(Ip.Replace("'", "''"));
-            Ip = "";
+            return UserAgent;
+        }
+
+        /// <summary>
+        /// Parse the useragent string and/or ip address
+        /// /// </summary>
+        public IpAddress ParseIpAddress(string ip)
+        {
+            IpAddress = new IpAddress();
+
+            dt.Connect();
+            InitStaticStructures(dt);
+            if (!dt.Connected)
+                return null;
+
+            if (ip == "")
+                return null;
+
+            ParseIp(ip.Replace("'", "''"));
+
+            return IpAddress;
         }
         #endregion
 
         #region private method
 
         #region parse
-        private void ParseUa(string userAgent)
+        private void ParseUa(string ua)
         {
             var clientId = 0;
             var clientClassId = -1;
 
-            if (string.IsNullOrEmpty(userAgent))
+            if (string.IsNullOrEmpty(ua))
                 return;
 
-            UserAgent.UaString = Ua;
+            UserAgent.UaString = ua;
             UserAgent.UaClass = "Unrecognized";
             UserAgent.UaClassCode = "unrecognized";
 
             if (!dt.Connected)
                 return;
 
-            ProcessClient(userAgent, ref clientId, ref clientClassId);
-            ProcessOs(userAgent, clientId);
-            ProcessDevice(userAgent, clientClassId);
+            ProcessClient(ua, ref clientId, ref clientClassId);
+            ProcessOs(ua, clientId);
+            ProcessDevice(ua, clientClassId);
 
             if (!string.IsNullOrEmpty(UserAgent.OsFamilyCode))
-                ProcessDeviceBrand();
+                ProcessDeviceBrand(ua);
 
             //set cache
             if (useCache)
-                cache.Set(userAgent, UserAgent);
+                cache.Set(ua, UserAgent);
         }
 
         private void ParseIp(string ip)
@@ -159,12 +164,12 @@ namespace Udger.Parser
             if (string.IsNullOrEmpty(ip))
                 return;
 
-            IpAddress.Ip = Ip;
+            IpAddress.Ip = ip;
 
             if (!dt.Connected)
                 return;
 
-            var ipVer = GetIpAddressVersion(Ip, out var ipLoc);
+            var ipVer = GetIpAddressVersion(ip, out var ipLoc);
             if (ipVer == 0)
                 return;
 
@@ -201,9 +206,9 @@ namespace Udger.Parser
 
         #region process methods
 
-        private void ProcessOs(string uaString, int clientId)
+        private void ProcessOs(string ua, int clientId)
         {
-            var rowId = FindIdFromList(uaString, osWordDetector.FindWords(uaString), osRegstringList);
+            var rowId = FindIdFromList(ua, osWordDetector.FindWords(ua), osRegstringList);
             if (rowId != -1)
             {
                 var q = string.Format(UdgerSqlQuery.SQL_OS, rowId);
@@ -219,23 +224,23 @@ namespace Udger.Parser
         }
 
 
-        private void ProcessClient(string uaString, ref int clientId, ref int classId)
+        private void ProcessClient(string ua, ref int clientId, ref int classId)
         {
-            var q = string.Format(UdgerSqlQuery.SQL_CRAWLER, uaString);
+            var q = string.Format(UdgerSqlQuery.SQL_CRAWLER, ua);
             var userAgentRs = dt.SelectQuery(q);
             if (userAgentRs != null && userAgentRs.Rows.Count > 0 )
             {
-                PrepareUa(userAgentRs.Rows[0], true, ref clientId, ref classId);
+                PrepareUa(userAgentRs.Rows[0], true, ua, ref clientId, ref classId);
                 classId = 99;
                 clientId = -1;
             }
             else
             {
-                var rowId = FindIdFromList(uaString, clientWordDetector.FindWords(uaString), clientRegstringList);
+                var rowId = FindIdFromList(ua, clientWordDetector.FindWords(ua), clientRegstringList);
                 if (rowId != -1)
                 {
                     userAgentRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT, rowId));
-                    PrepareUa(userAgentRs.Rows[0], false, ref clientId, ref classId);
+                    PrepareUa(userAgentRs.Rows[0], false, ua, ref clientId, ref classId);
                 }
                 else
                 {
@@ -245,9 +250,9 @@ namespace Udger.Parser
             }
         }
 
-        private void ProcessDevice(string uaString, int classId)
+        private void ProcessDevice(string ua, int classId)
         {
-            var rowId = FindIdFromList(uaString, deviceWordDetector.FindWords(uaString), deviceRegstringList);
+            var rowId = FindIdFromList(ua, deviceWordDetector.FindWords(ua), deviceRegstringList);
             if (rowId != -1)
             {
                 var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE, rowId));
@@ -264,7 +269,7 @@ namespace Udger.Parser
             }
         }
 
-        private void ProcessDeviceBrand()
+        private void ProcessDeviceBrand(string ua)
         {
             var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_REGEX, UserAgent.OsFamilyCode, UserAgent.OsCode));
             if (devRs == null || devRs.Rows.Count <= 0)
@@ -279,10 +284,10 @@ namespace Udger.Parser
 
                 var regConv = new PerlRegExpConverter(regex, "", Encoding.UTF8);
                 var reg = regConv.Regex;
-                if (!reg.IsMatch(Ua))
+                if (!reg.IsMatch(ua))
                     continue;
 
-                var foo = reg.Match(Ua).Groups[1].ToString();
+                var foo = reg.Match(ua).Groups[1].ToString();
                 var devNameListRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_NAME_LIST, devId, foo));
                 if (devNameListRs == null || devNameListRs.Rows.Count <= 0)
                     continue;
@@ -302,7 +307,7 @@ namespace Udger.Parser
 
         #region prepare data methods
 
-        private void PrepareUa(DataRow row, bool crawler, ref int clientId, ref int classId)
+        private void PrepareUa(DataRow row, bool crawler, string ua, ref int clientId, ref int classId)
         {
             UserAgent.Ua = ConvertToStr(row["ua"]);
             UserAgent.UaVersion = ConvertToStr(row["ua_version"]);
@@ -315,7 +320,7 @@ namespace Udger.Parser
                     var regConv = new PerlRegExpConverter(pattern, "", Encoding.UTF8);
                     var searchTerm = regConv.Regex;
                     Group group;
-                    if (searchTerm.IsMatch(Ua) && (group = searchTerm.Match(Ua).Groups[1]) != null)
+                    if (searchTerm.IsMatch(ua) && (group = searchTerm.Match(ua).Groups[1]) != null)
                     {
                         UserAgent.Ua = ConvertToStr(row["ua"]) + " " + ConvertToStr(group);
                         UserAgent.UaVersion = ConvertToStr(group);
@@ -329,7 +334,7 @@ namespace Udger.Parser
             UserAgent.CrawlerCategoryCode = ConvertToStr(row["crawler_category_code"]);
             UserAgent.CrawlerLastSeen = ConvertToStr(row["crawler_last_seen"]);
             UserAgent.CrawlerRespectRobotstxt = ConvertToStr(row["crawler_respect_robotstxt"]);
-            UserAgent.UaString = Ua;
+            UserAgent.UaString = ua;
             UserAgent.UaClass = ConvertToStr(row["ua_class"]);
             UserAgent.UaClassCode = ConvertToStr(row["ua_class_code"]);
             UserAgent.UaUptodateCurrentVersion = ConvertToStr(row["ua_uptodate_current_version"]);
