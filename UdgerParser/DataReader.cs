@@ -17,36 +17,31 @@ namespace Udger.Parser
 {
     class DataReader
     {
-        private SQLiteConnection db;
         public string DataSourcePath { get; set; }
-        public bool Connected { get; private set; }
-        public string DataDir { get; set; }
-
-        public void Connect()
-        {
-            if (Connected)
-                return;
-
-            db = new SQLiteConnection(@"Data Source=" + DataSourcePath);
-            Connected = true;
-        }
 
         public DataTable SelectQuery(string query)
         {
-            if (!Connected)
-                return new DataTable();
+            using (var connection = CreateConnection(DataSourcePath))
+            using (var command = CreateCommand(connection, query))
+            {
+                var dataTable = new DataTable();
+                var adapter = new SQLiteDataAdapter(command);
+                adapter.Fill(dataTable);
 
-            db.Open();
+                return dataTable;
+            }
+        }
 
-            var cmd = db.CreateCommand();
-            cmd.CommandText = query;
-            var dt = new DataTable();
-            var ad = new SQLiteDataAdapter(cmd);
-            ad.Fill(dt);
+        private static SQLiteConnection CreateConnection(string dataSourcePath)
+        {
+            return new SQLiteConnection($"Data Source={dataSourcePath}");
+        }
 
-            db.Close();
-
-            return dt;
+        private static SQLiteCommand CreateCommand(SQLiteConnection connection, string commandText)
+        {
+            var command = connection.CreateCommand();
+            command.CommandText = commandText;
+            return command;
         }
     }
 }

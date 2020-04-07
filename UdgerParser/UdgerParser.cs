@@ -37,7 +37,9 @@ namespace Udger.Parser
 
         private readonly LRUCache<string, UserAgent> cache;
         private readonly bool useCache;
-        private readonly DataReader dt;
+        private readonly DataReader db;
+        private bool connected;
+
         private static WordDetector clientWordDetector;
         private static WordDetector deviceWordDetector;
         private static WordDetector osWordDetector;
@@ -55,7 +57,7 @@ namespace Udger.Parser
         /// <param name="cacheCapacity">int LRUCash Capacity (minimum is 1)</param>
         public UdgerParser(bool useLRUCache = true, int cacheCapacity = 10000)
         {
-            dt = new DataReader();
+            db = new DataReader();
             useCache = useLRUCache;
             if (useLRUCache)
                 cache = new LRUCache<string, UserAgent>(cacheCapacity);
@@ -73,11 +75,14 @@ namespace Udger.Parser
             if (!Directory.Exists(dataDir))
                 throw new Exception("Data dir not found");
 
-            dt.DataDir = dataDir;
-            dt.DataSourcePath = $@"{dataDir}\{fileName}";
+            db.DataSourcePath = $@"{dataDir}\{fileName}";
 
-            if (!File.Exists(dt.DataSourcePath))
+            if (!File.Exists(db.DataSourcePath))
                 throw new Exception($"Data file {fileName} not found");
+
+            InitStaticStructures(db);
+
+            connected = true;
         }
         #endregion
 
@@ -87,11 +92,6 @@ namespace Udger.Parser
         /// /// </summary>
         public UserAgent ParseUserAgent(string ua)
         {
-            dt.Connect();
-            InitStaticStructures(dt);
-            if (!dt.Connected)
-                return null;
-
             if (useCache && cache.TryGetValue(ua, out var userAgent))
                 return userAgent;
 
@@ -103,11 +103,6 @@ namespace Udger.Parser
         /// /// </summary>
         public IpAddress ParseIpAddress(string ip)
         {
-            dt.Connect();
-            InitStaticStructures(dt);
-            if (!dt.Connected)
-                return null;
-
             return ParseIp(ip.Replace("'", "''"));
         }
         #endregion
@@ -128,7 +123,7 @@ namespace Udger.Parser
             userAgent.UaClass = "Unrecognized";
             userAgent.UaClassCode = "unrecognized";
 
-            if (!dt.Connected)
+            if (!connected)
                 return userAgent;
 
             ProcessClient(userAgent, uaString, ref clientId, ref clientClassId);
@@ -153,7 +148,7 @@ namespace Udger.Parser
 
             ipAddress.Ip = ip;
 
-            if (!dt.Connected)
+            if (!connected)
                 return ipAddress;
 
             var ipVer = GetIpAddressVersion(ip, out var ipLoc);
@@ -165,7 +160,7 @@ namespace Udger.Parser
 
             ipAddress.IpVer = ConvertToStr(ipVer);
 
-            var ipTable = dt.SelectQuery(@"SELECT udger_crawler_list.id as botid,ip_last_seen,ip_hostname,ip_country,ip_city,ip_country_code,ip_classification,ip_classification_code,
+            var ipTable = db.SelectQuery(@"SELECT udger_crawler_list.id as botid,ip_last_seen,ip_hostname,ip_country,ip_city,ip_country_code,ip_classification,ip_classification_code,
                 name,ver,ver_major,last_seen,respect_robotstxt,family,family_code,family_homepage,family_icon,vendor,vendor_code,vendor_homepage,crawler_classification,crawler_classification_code,crawler_classification
                 FROM udger_ip_list
                 JOIN udger_ip_class ON udger_ip_class.id=udger_ip_list.class_id
@@ -181,7 +176,7 @@ namespace Udger.Parser
 
             var ipLong = IpToInt(ip);
 
-            var dataCenter = dt.SelectQuery(@"select name, name_code, homepage
+            var dataCenter = db.SelectQuery(@"select name, name_code, homepage
                 FROM udger_datacenter_range
                 JOIN udger_datacenter_list ON udger_datacenter_range.datacenter_id = udger_datacenter_list.id
                 where iplong_from <= " + ipLong + " AND iplong_to >=" + ipLong);
@@ -201,12 +196,12 @@ namespace Udger.Parser
             if (rowId != -1)
             {
                 var q = string.Format(UdgerSqlQuery.SQL_OS, rowId);
-                var opSysRs = dt.SelectQuery(q);
+                var opSysRs = db.SelectQuery(q);
                 PrepareOs(userAgent, opSysRs.Rows[0]);
             }
             else if(clientId != 0)
             {
-                var opSysRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_OS, clientId));
+                var opSysRs = db.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_OS, clientId));
                 if (opSysRs != null && opSysRs.Rows.Count > 0)
                     PrepareOs(userAgent, opSysRs.Rows[0]);
             }
@@ -216,7 +211,7 @@ namespace Udger.Parser
         private void ProcessClient(UserAgent userAgent, string uaString, ref int clientId, ref int classId)
         {
             var q = string.Format(UdgerSqlQuery.SQL_CRAWLER, uaString);
-            var userAgentRs = dt.SelectQuery(q);
+            var userAgentRs = db.SelectQuery(q);
             if (userAgentRs != null && userAgentRs.Rows.Count > 0 )
             {
                 PrepareUa(userAgent, uaString, userAgentRs.Rows[0], true, ref clientId, ref classId);
@@ -228,7 +223,7 @@ namespace Udger.Parser
                 var rowId = FindIdFromList(uaString, clientWordDetector.FindWords(uaString), clientRegstringList);
                 if (rowId != -1)
                 {
-                    userAgentRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT, rowId));
+                    userAgentRs = db.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT, rowId));
                     PrepareUa(userAgent, uaString, userAgentRs.Rows[0], false, ref clientId, ref classId);
                 }
                 else
@@ -244,7 +239,7 @@ namespace Udger.Parser
             var rowId = FindIdFromList(uaString, deviceWordDetector.FindWords(uaString), deviceRegstringList);
             if (rowId != -1)
             {
-                var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE, rowId));
+                var devRs = db.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE, rowId));
                 PrepareDevice(userAgent, devRs.Rows[0]);
             }
             else
@@ -252,7 +247,7 @@ namespace Udger.Parser
                 if (classId == -1)
                     return;
 
-                var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_CLASS, classId.ToString()));
+                var devRs = db.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_CLASS, classId.ToString()));
                 if (devRs != null && devRs.Rows.Count > 0)
                     PrepareDevice(userAgent, devRs.Rows[0]);
             }
@@ -260,7 +255,7 @@ namespace Udger.Parser
 
         private void ProcessDeviceBrand(UserAgent userAgent, string uaString)
         {
-            var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_REGEX, userAgent.OsFamilyCode, userAgent.OsCode));
+            var devRs = db.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_REGEX, userAgent.OsFamilyCode, userAgent.OsCode));
             if (devRs == null || devRs.Rows.Count <= 0)
                 return;
 
@@ -277,7 +272,7 @@ namespace Udger.Parser
                     continue;
 
                 var foo = reg.Match(uaString).Groups[1].ToString();
-                var devNameListRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_NAME_LIST, devId, foo));
+                var devNameListRs = db.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_NAME_LIST, devId, foo));
                 if (devNameListRs == null || devNameListRs.Rows.Count <= 0)
                     continue;
 
