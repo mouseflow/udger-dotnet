@@ -26,9 +26,6 @@ namespace Udger.Parser
 {
     public class UdgerParser
     {
-        public UserAgent UserAgent { get; private set; }
-        public IpAddress IpAddress { get; private set; }
-
         #region private Variables
         private struct IdRegString
         {
@@ -90,22 +87,15 @@ namespace Udger.Parser
         /// /// </summary>
         public UserAgent ParseUserAgent(string ua)
         {
-            UserAgent = new UserAgent();
-
             dt.Connect();
             InitStaticStructures(dt);
             if (!dt.Connected)
                 return null;
 
-            if (ua == "")
-                return null;
+            if (useCache && cache.TryGetValue(ua, out var userAgent))
+                return userAgent;
 
-            if (useCache && cache.TryGetValue(ua, out var uaCache))
-                UserAgent = uaCache;
-            else
-                ParseUa(ua.Replace("'", "''"));
-
-            return UserAgent;
+            return ParseUa(ua.Replace("'", "''"));
         }
 
         /// <summary>
@@ -113,70 +103,67 @@ namespace Udger.Parser
         /// /// </summary>
         public IpAddress ParseIpAddress(string ip)
         {
-            IpAddress = new IpAddress();
-
             dt.Connect();
             InitStaticStructures(dt);
             if (!dt.Connected)
                 return null;
 
-            if (ip == "")
-                return null;
-
-            ParseIp(ip.Replace("'", "''"));
-
-            return IpAddress;
+            return ParseIp(ip.Replace("'", "''"));
         }
         #endregion
 
         #region private method
 
         #region parse
-        private void ParseUa(string ua)
+        private UserAgent ParseUa(string uaString)
         {
+            var userAgent = new UserAgent();
             var clientId = 0;
             var clientClassId = -1;
 
-            if (string.IsNullOrEmpty(ua))
-                return;
+            if (string.IsNullOrEmpty(uaString))
+                return userAgent;
 
-            UserAgent.UaString = ua;
-            UserAgent.UaClass = "Unrecognized";
-            UserAgent.UaClassCode = "unrecognized";
+            userAgent.UaString = uaString;
+            userAgent.UaClass = "Unrecognized";
+            userAgent.UaClassCode = "unrecognized";
 
             if (!dt.Connected)
-                return;
+                return userAgent;
 
-            ProcessClient(ua, ref clientId, ref clientClassId);
-            ProcessOs(ua, clientId);
-            ProcessDevice(ua, clientClassId);
+            ProcessClient(userAgent, uaString, ref clientId, ref clientClassId);
+            ProcessOs(userAgent, uaString, clientId);
+            ProcessDevice(userAgent, uaString, clientClassId);
 
-            if (!string.IsNullOrEmpty(UserAgent.OsFamilyCode))
-                ProcessDeviceBrand(ua);
+            if (!string.IsNullOrEmpty(userAgent.OsFamilyCode))
+                ProcessDeviceBrand(userAgent, uaString);
 
-            //set cache
             if (useCache)
-                cache.Set(ua, UserAgent);
+                cache.Set(uaString, userAgent);
+
+            return userAgent;
         }
 
-        private void ParseIp(string ip)
+        private IpAddress ParseIp(string ip)
         {
-            if (string.IsNullOrEmpty(ip))
-                return;
+            var ipAddress = new IpAddress();
 
-            IpAddress.Ip = ip;
+            if (string.IsNullOrEmpty(ip))
+                return ipAddress;
+
+            ipAddress.Ip = ip;
 
             if (!dt.Connected)
-                return;
+                return ipAddress;
 
             var ipVer = GetIpAddressVersion(ip, out var ipLoc);
             if (ipVer == 0)
-                return;
+                return ipAddress;
 
             if (ipLoc != "")
                 ip = ipLoc;
 
-            IpAddress.IpVer = ConvertToStr(ipVer);
+            ipAddress.IpVer = ConvertToStr(ipVer);
 
             var ipTable = dt.SelectQuery(@"SELECT udger_crawler_list.id as botid,ip_last_seen,ip_hostname,ip_country,ip_city,ip_country_code,ip_classification,ip_classification_code,
                 name,ver,ver_major,last_seen,respect_robotstxt,family,family_code,family_homepage,family_icon,vendor,vendor_code,vendor_homepage,crawler_classification,crawler_classification_code,crawler_classification
@@ -187,10 +174,10 @@ namespace Udger.Parser
                 WHERE ip=" + '"' + ip + '"' + " ORDER BY sequence");
 
             if (ipTable != null && ipTable.Rows.Count > 0)
-                PrepareIp(ipTable.Rows[0]);
+                PrepareIp(ipAddress, ipTable.Rows[0]);
 
             if (ipVer != 4)
-                return;
+                return ipAddress;
 
             var ipLong = IpToInt(ip);
 
@@ -200,63 +187,65 @@ namespace Udger.Parser
                 where iplong_from <= " + ipLong + " AND iplong_to >=" + ipLong);
 
             if (dataCenter != null && dataCenter.Rows.Count > 0)
-                PrepareIpDataCenter(dataCenter.Rows[0]);
+                PrepareIpDataCenter(ipAddress, dataCenter.Rows[0]);
+
+            return ipAddress;
         }
         #endregion
 
         #region process methods
 
-        private void ProcessOs(string ua, int clientId)
+        private void ProcessOs(UserAgent userAgent, string uaString, int clientId)
         {
-            var rowId = FindIdFromList(ua, osWordDetector.FindWords(ua), osRegstringList);
+            var rowId = FindIdFromList(uaString, osWordDetector.FindWords(uaString), osRegstringList);
             if (rowId != -1)
             {
                 var q = string.Format(UdgerSqlQuery.SQL_OS, rowId);
                 var opSysRs = dt.SelectQuery(q);
-                PrepareOs(opSysRs.Rows[0]);
+                PrepareOs(userAgent, opSysRs.Rows[0]);
             }
             else if(clientId != 0)
             {
                 var opSysRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_OS, clientId));
                 if (opSysRs != null && opSysRs.Rows.Count > 0)
-                    PrepareOs(opSysRs.Rows[0]);
+                    PrepareOs(userAgent, opSysRs.Rows[0]);
             }
         }
 
 
-        private void ProcessClient(string ua, ref int clientId, ref int classId)
+        private void ProcessClient(UserAgent userAgent, string uaString, ref int clientId, ref int classId)
         {
-            var q = string.Format(UdgerSqlQuery.SQL_CRAWLER, ua);
+            var q = string.Format(UdgerSqlQuery.SQL_CRAWLER, uaString);
             var userAgentRs = dt.SelectQuery(q);
             if (userAgentRs != null && userAgentRs.Rows.Count > 0 )
             {
-                PrepareUa(userAgentRs.Rows[0], true, ua, ref clientId, ref classId);
+                PrepareUa(userAgent, uaString, userAgentRs.Rows[0], true, ref clientId, ref classId);
                 classId = 99;
                 clientId = -1;
             }
             else
             {
-                var rowId = FindIdFromList(ua, clientWordDetector.FindWords(ua), clientRegstringList);
+                var rowId = FindIdFromList(uaString, clientWordDetector.FindWords(uaString), clientRegstringList);
                 if (rowId != -1)
                 {
                     userAgentRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT, rowId));
-                    PrepareUa(userAgentRs.Rows[0], false, ua, ref clientId, ref classId);
+                    PrepareUa(userAgent, uaString, userAgentRs.Rows[0], false, ref clientId, ref classId);
                 }
                 else
                 {
-                    UserAgent.UaClass = "Unrecognized";
-                    UserAgent.UaClassCode = "unrecognized";
+                    userAgent.UaClass = "Unrecognized";
+                    userAgent.UaClassCode = "unrecognized";
                 }
             }
         }
 
-        private void ProcessDevice(string ua, int classId)
+        private void ProcessDevice(UserAgent userAgent, string uaString, int classId)
         {
-            var rowId = FindIdFromList(ua, deviceWordDetector.FindWords(ua), deviceRegstringList);
+            var rowId = FindIdFromList(uaString, deviceWordDetector.FindWords(uaString), deviceRegstringList);
             if (rowId != -1)
             {
                 var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE, rowId));
-                PrepareDevice(devRs.Rows[0]);
+                PrepareDevice(userAgent, devRs.Rows[0]);
             }
             else
             {
@@ -265,13 +254,13 @@ namespace Udger.Parser
 
                 var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_CLASS, classId.ToString()));
                 if (devRs != null && devRs.Rows.Count > 0)
-                    PrepareDevice(devRs.Rows[0]);
+                    PrepareDevice(userAgent, devRs.Rows[0]);
             }
         }
 
-        private void ProcessDeviceBrand(string ua)
+        private void ProcessDeviceBrand(UserAgent userAgent, string uaString)
         {
-            var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_REGEX, UserAgent.OsFamilyCode, UserAgent.OsCode));
+            var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_REGEX, userAgent.OsFamilyCode, userAgent.OsCode));
             if (devRs == null || devRs.Rows.Count <= 0)
                 return;
 
@@ -284,22 +273,22 @@ namespace Udger.Parser
 
                 var regConv = new PerlRegExpConverter(regex, "", Encoding.UTF8);
                 var reg = regConv.Regex;
-                if (!reg.IsMatch(ua))
+                if (!reg.IsMatch(uaString))
                     continue;
 
-                var foo = reg.Match(ua).Groups[1].ToString();
+                var foo = reg.Match(uaString).Groups[1].ToString();
                 var devNameListRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_DEVICE_NAME_LIST, devId, foo));
                 if (devNameListRs == null || devNameListRs.Rows.Count <= 0)
                     continue;
 
                 var r = devNameListRs.Rows[0];
-                UserAgent.DeviceMarketname = ConvertToStr(r["marketname"]);
-                UserAgent.DeviceBrand = ConvertToStr(r["brand"]);
-                UserAgent.DeviceBrandCode = ConvertToStr(r["brand_code"]);
-                UserAgent.DeviceBrandHomepage = ConvertToStr(r["brand_url"]);
-                UserAgent.DeviceBrandIcon = ConvertToStr(r["icon"]);
-                UserAgent.DeviceBrandIconBig = ConvertToStr(r["icon_big"]);
-                UserAgent.DeviceBrandInfoUrl = @"https://udger.com/resources/ua-list/devices-brand-detail?brand=" + ConvertToStr(r["brand_code"]);
+                userAgent.DeviceMarketname = ConvertToStr(r["marketname"]);
+                userAgent.DeviceBrand = ConvertToStr(r["brand"]);
+                userAgent.DeviceBrandCode = ConvertToStr(r["brand_code"]);
+                userAgent.DeviceBrandHomepage = ConvertToStr(r["brand_url"]);
+                userAgent.DeviceBrandIcon = ConvertToStr(r["icon"]);
+                userAgent.DeviceBrandIconBig = ConvertToStr(r["icon_big"]);
+                userAgent.DeviceBrandInfoUrl = @"https://udger.com/resources/ua-list/devices-brand-detail?brand=" + ConvertToStr(r["brand_code"]);
                 break;
             }
         }
@@ -307,11 +296,30 @@ namespace Udger.Parser
 
         #region prepare data methods
 
-        private void PrepareUa(DataRow row, bool crawler, string ua, ref int clientId, ref int classId)
+        private void PrepareUa(UserAgent userAgent, string uaString, DataRow row, bool crawler, ref int clientId, ref int classId)
         {
-            UserAgent.Ua = ConvertToStr(row["ua"]);
-            UserAgent.UaVersion = ConvertToStr(row["ua_version"]);
-            UserAgent.UaVersionMajor = ConvertToStr(row["ua_version_major"]);
+            userAgent.Ua = ConvertToStr(row["ua"]);
+            userAgent.UaVersion = ConvertToStr(row["ua_version"]);
+            userAgent.UaVersionMajor = ConvertToStr(row["ua_version_major"]);
+            userAgent.CrawlerCategory = ConvertToStr(row["crawler_category"]);
+            userAgent.CrawlerCategoryCode = ConvertToStr(row["crawler_category_code"]);
+            userAgent.CrawlerLastSeen = ConvertToStr(row["crawler_last_seen"]);
+            userAgent.CrawlerRespectRobotstxt = ConvertToStr(row["crawler_respect_robotstxt"]);
+            userAgent.UaString = uaString;
+            userAgent.UaClass = ConvertToStr(row["ua_class"]);
+            userAgent.UaClassCode = ConvertToStr(row["ua_class_code"]);
+            userAgent.UaUptodateCurrentVersion = ConvertToStr(row["ua_uptodate_current_version"]);
+            userAgent.UaFamily = ConvertToStr(row["ua_family"]);
+            userAgent.UaFamilyCode = ConvertToStr(row["ua_family_code"]);
+            userAgent.UaFamilyHompage = ConvertToStr(row["ua_family_homepage"]);
+            userAgent.UaFamilyVendor = ConvertToStr(row["ua_family_vendor"]);
+            userAgent.UaFamilyVendorCode = ConvertToStr(row["ua_family_vendor_code"]);
+            userAgent.UaFamilyVendorHomepage = ConvertToStr(row["ua_family_vendor_homepage"]);
+            userAgent.UaFamilyIcon = ConvertToStr(row["ua_family_icon"]);
+            userAgent.UaFamilyIconBig = ConvertToStr(row["ua_family_icon_big"]);
+            userAgent.UaFamilyInfoUrl = ConvertToStr(row["ua_family_info_url"]);
+            userAgent.UaEngine = ConvertToStr(row["ua_engine"]);
+
             if (!crawler)
             {
                 var pattern = ConvertToStr(row["regstring"]);
@@ -320,92 +328,75 @@ namespace Udger.Parser
                     var regConv = new PerlRegExpConverter(pattern, "", Encoding.UTF8);
                     var searchTerm = regConv.Regex;
                     Group group;
-                    if (searchTerm.IsMatch(ua) && (group = searchTerm.Match(ua).Groups[1]) != null)
+                    if (searchTerm.IsMatch(uaString) && (group = searchTerm.Match(uaString).Groups[1]) != null)
                     {
-                        UserAgent.Ua = ConvertToStr(row["ua"]) + " " + ConvertToStr(group);
-                        UserAgent.UaVersion = ConvertToStr(group);
-                        UserAgent.UaVersionMajor = ConvertToStr(group).Split('.')[0];
+                        userAgent.Ua = ConvertToStr(row["ua"]) + " " + ConvertToStr(group);
+                        userAgent.UaVersion = ConvertToStr(group);
+                        userAgent.UaVersionMajor = ConvertToStr(group).Split('.')[0];
                     }
                 }
             }
+
             clientId = ConvertToInt(row["client_id"]);
             classId =  ConvertToInt(row["class_id"]);
-            UserAgent.CrawlerCategory = ConvertToStr(row["crawler_category"]);
-            UserAgent.CrawlerCategoryCode = ConvertToStr(row["crawler_category_code"]);
-            UserAgent.CrawlerLastSeen = ConvertToStr(row["crawler_last_seen"]);
-            UserAgent.CrawlerRespectRobotstxt = ConvertToStr(row["crawler_respect_robotstxt"]);
-            UserAgent.UaString = ua;
-            UserAgent.UaClass = ConvertToStr(row["ua_class"]);
-            UserAgent.UaClassCode = ConvertToStr(row["ua_class_code"]);
-            UserAgent.UaUptodateCurrentVersion = ConvertToStr(row["ua_uptodate_current_version"]);
-            UserAgent.UaFamily = ConvertToStr(row["ua_family"]);
-            UserAgent.UaFamilyCode = ConvertToStr(row["ua_family_code"]);
-            UserAgent.UaFamilyHompage = ConvertToStr(row["ua_family_homepage"]);
-            UserAgent.UaFamilyVendor = ConvertToStr(row["ua_family_vendor"]);
-            UserAgent.UaFamilyVendorCode = ConvertToStr(row["ua_family_vendor_code"]);
-            UserAgent.UaFamilyVendorHomepage = ConvertToStr(row["ua_family_vendor_homepage"]);
-            UserAgent.UaFamilyIcon = ConvertToStr(row["ua_family_icon"]);
-            UserAgent.UaFamilyIconBig = ConvertToStr(row["ua_family_icon_big"]);
-            UserAgent.UaFamilyInfoUrl = ConvertToStr(row["ua_family_info_url"]);
-            UserAgent.UaEngine = ConvertToStr(row["ua_engine"]);
         }
 
-        private void PrepareOs(DataRow row)
+        private void PrepareOs(UserAgent userAgent, DataRow row)
         {
-            UserAgent.Os = ConvertToStr(row["os"]);
-            UserAgent.OsCode = ConvertToStr(row["os_code"]);
-            UserAgent.OsHomepage = ConvertToStr(row["os_home_page"]);
-            UserAgent.OsIcon = ConvertToStr(row["os_icon"]);
-            UserAgent.OsIconBig = ConvertToStr(row["os_icon_big"]);
-            UserAgent.OsInfoUrl = ConvertToStr(row["os_info_url"]);
-            UserAgent.OsFamily = ConvertToStr(row["os_family"]);
-            UserAgent.OsFamilyCode = ConvertToStr(row["os_family_code"]);
-            UserAgent.OsFamilyVendor = ConvertToStr(row["os_family_vendor"]);
-            UserAgent.OsFamilyVendorCode = ConvertToStr(row["os_family_vendor_code"]);
-            UserAgent.OsFamilyVendorHomepage = ConvertToStr(row["os_family_vedor_homepage"]);
+            userAgent.Os = ConvertToStr(row["os"]);
+            userAgent.OsCode = ConvertToStr(row["os_code"]);
+            userAgent.OsHomepage = ConvertToStr(row["os_home_page"]);
+            userAgent.OsIcon = ConvertToStr(row["os_icon"]);
+            userAgent.OsIconBig = ConvertToStr(row["os_icon_big"]);
+            userAgent.OsInfoUrl = ConvertToStr(row["os_info_url"]);
+            userAgent.OsFamily = ConvertToStr(row["os_family"]);
+            userAgent.OsFamilyCode = ConvertToStr(row["os_family_code"]);
+            userAgent.OsFamilyVendor = ConvertToStr(row["os_family_vendor"]);
+            userAgent.OsFamilyVendorCode = ConvertToStr(row["os_family_vendor_code"]);
+            userAgent.OsFamilyVendorHomepage = ConvertToStr(row["os_family_vedor_homepage"]);
         }
 
-        private void PrepareDevice(DataRow row)
+        private void PrepareDevice(UserAgent userAgent, DataRow row)
         {
-            UserAgent.DeviceClass = ConvertToStr(row["device_class"]);
-            UserAgent.DeviceClassCode = ConvertToStr(row["device_class_code"]);
-            UserAgent.DeviceClassIcon = ConvertToStr(row["device_class_icon"]);
-            UserAgent.DeviceClassIconBig = ConvertToStr(row["device_class_icon_big"]);
-            UserAgent.DeviceClassInfoUrl =  ConvertToStr(row["device_class_info_url"]);
+            userAgent.DeviceClass = ConvertToStr(row["device_class"]);
+            userAgent.DeviceClassCode = ConvertToStr(row["device_class_code"]);
+            userAgent.DeviceClassIcon = ConvertToStr(row["device_class_icon"]);
+            userAgent.DeviceClassIconBig = ConvertToStr(row["device_class_icon_big"]);
+            userAgent.DeviceClassInfoUrl =  ConvertToStr(row["device_class_info_url"]);
         }
 
-        private void PrepareIp(DataRow row)
+        private void PrepareIp(IpAddress ipAddress, DataRow row)
         {
-            IpAddress.IpClassification = ConvertToStr(row["ip_classification"]);
-            IpAddress.IpClassificationCode = ConvertToStr(row["ip_classification_code"]);
-            IpAddress.IpLastSeen = ConvertToStr(row["ip_last_seen"]);
-            IpAddress.IpHostname = ConvertToStr(row["ip_hostname"]);
-            IpAddress.IpCountry = ConvertToStr(row["ip_country"]);
-            IpAddress.IpCountryCode = ConvertToStr(row["ip_country_code"]);
-            IpAddress.IpCity = ConvertToStr(row["ip_city"]);
-            IpAddress.CrawlerName = ConvertToStr(row["name"]);
-            IpAddress.CrawlerVer = ConvertToStr(row["ver"]);
-            IpAddress.CrawlerVerMajor = ConvertToStr(row["ver_major"]);
-            IpAddress.CrawlerFamily = ConvertToStr(row["family"]);
-            IpAddress.CrawlerFamilyCode = ConvertToStr(row["family_code"]);
-            IpAddress.CrawlerFamilyHomepage = ConvertToStr(row["family_homepage"]);
-            IpAddress.CrawlerFamilyVendor = ConvertToStr(row["vendor"]);
-            IpAddress.CrawlerFamilyVendorCode = ConvertToStr(row["vendor_code"]);
-            IpAddress.CrawlerFamilyVendorHomepage = ConvertToStr(row["vendor_homepage"]);
-            IpAddress.CrawlerFamilyIcon = ConvertToStr(row["family_icon"]);
-            IpAddress.CrawlerLastSeen = ConvertToStr(row["last_seen"]);
-            IpAddress.CrawlerCategory = ConvertToStr(row["crawler_classification"]);
-            IpAddress.CrawlerCategoryCode = ConvertToStr(row["crawler_classification_code"]);
-            if (IpAddress.IpClassificationCode == "crawler")
-                IpAddress.CrawlerFamilyInfoUrl = "https://udger.com/resources/ua-list/bot-detail?bot=" + ConvertToStr(row["family"]) + "#id" + ConvertToStr(row["botid"]);
-            IpAddress.CrawlerRespectRobotstxt = ConvertToStr(row["respect_robotstxt"]);
+            ipAddress.IpClassification = ConvertToStr(row["ip_classification"]);
+            ipAddress.IpClassificationCode = ConvertToStr(row["ip_classification_code"]);
+            ipAddress.IpLastSeen = ConvertToStr(row["ip_last_seen"]);
+            ipAddress.IpHostname = ConvertToStr(row["ip_hostname"]);
+            ipAddress.IpCountry = ConvertToStr(row["ip_country"]);
+            ipAddress.IpCountryCode = ConvertToStr(row["ip_country_code"]);
+            ipAddress.IpCity = ConvertToStr(row["ip_city"]);
+            ipAddress.CrawlerName = ConvertToStr(row["name"]);
+            ipAddress.CrawlerVer = ConvertToStr(row["ver"]);
+            ipAddress.CrawlerVerMajor = ConvertToStr(row["ver_major"]);
+            ipAddress.CrawlerFamily = ConvertToStr(row["family"]);
+            ipAddress.CrawlerFamilyCode = ConvertToStr(row["family_code"]);
+            ipAddress.CrawlerFamilyHomepage = ConvertToStr(row["family_homepage"]);
+            ipAddress.CrawlerFamilyVendor = ConvertToStr(row["vendor"]);
+            ipAddress.CrawlerFamilyVendorCode = ConvertToStr(row["vendor_code"]);
+            ipAddress.CrawlerFamilyVendorHomepage = ConvertToStr(row["vendor_homepage"]);
+            ipAddress.CrawlerFamilyIcon = ConvertToStr(row["family_icon"]);
+            ipAddress.CrawlerLastSeen = ConvertToStr(row["last_seen"]);
+            ipAddress.CrawlerCategory = ConvertToStr(row["crawler_classification"]);
+            ipAddress.CrawlerCategoryCode = ConvertToStr(row["crawler_classification_code"]);
+            if (ipAddress.IpClassificationCode == "crawler")
+                ipAddress.CrawlerFamilyInfoUrl = "https://udger.com/resources/ua-list/bot-detail?bot=" + ConvertToStr(row["family"]) + "#id" + ConvertToStr(row["botid"]);
+            ipAddress.CrawlerRespectRobotstxt = ConvertToStr(row["respect_robotstxt"]);
         }
 
-        private void PrepareIpDataCenter(DataRow row)
+        private void PrepareIpDataCenter(IpAddress ipAddress, DataRow row)
         {
-            IpAddress.DatacenterName = ConvertToStr(row["name"]);
-            IpAddress.DatacenterNameCode = ConvertToStr(row["name_code"]);
-            IpAddress.DatacenterHomepage = ConvertToStr(row["homepage"]);
+            ipAddress.DatacenterName = ConvertToStr(row["name"]);
+            ipAddress.DatacenterNameCode = ConvertToStr(row["name_code"]);
+            ipAddress.DatacenterHomepage = ConvertToStr(row["homepage"]);
         }
         #endregion
  
