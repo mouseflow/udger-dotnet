@@ -72,35 +72,20 @@ namespace Udger.Parser
 
         #region setParser method
         /// <summary>
-        /// Set the data directory
-        /// </summary> 
-        /// <param name="dataDir">string path udger DB directory</param>
-        public void SetDataDir(string dataDir)
-        {
-            if (!Directory.Exists(dataDir))
-                throw new Exception("Data dir not found");
-
-            dt.data_dir = dataDir;
-            dt.DataSourcePath = dataDir + @"\udgerdb_v3.dat";
-
-            if (!File.Exists(dt.DataSourcePath))
-                throw new Exception("Data file udgerdb_v3.dat not found");
-        }
-        /// <summary>
         /// Set the data directory and DB filename
         /// </summary> 
         /// <param name="dataDir">string path udger DB directory</param>
         /// <param name="fileName">string path udger DB filename</param>
-        public void SetDataDir(string dataDir, string fileName)
+        public void SetDataDir(string dataDir, string fileName = "udgerdb_v3.dat")
         {
             if (!Directory.Exists(dataDir))
                 throw new Exception("Data dir not found");
 
-            dt.data_dir = dataDir;
-            dt.DataSourcePath = dataDir + @"\" + fileName;
+            dt.DataDir = dataDir;
+            dt.DataSourcePath = $@"{dataDir}\{fileName}";
 
             if (!File.Exists(dt.DataSourcePath))
-                throw new Exception("Data file " + fileName + " not found");
+                throw new Exception($"Data file {fileName} not found");
         }
         #endregion
 
@@ -146,7 +131,6 @@ namespace Udger.Parser
         {
             var clientId = 0;
             var clientClassId = -1;
-            var osId = 0;
 
             if (string.IsNullOrEmpty(userAgent))
                 return;
@@ -158,9 +142,9 @@ namespace Udger.Parser
             if (!dt.Connected)
                 return;
 
-            ProcessClient(userAgent, ref osId, ref clientId, ref clientClassId);
-            ProcessOs(userAgent, ref osId, clientId);
-            ProcessDevice(userAgent, ref clientClassId);
+            ProcessClient(userAgent, ref clientId, ref clientClassId);
+            ProcessOs(userAgent, clientId);
+            ProcessDevice(userAgent, clientClassId);
 
             if (!string.IsNullOrEmpty(UserAgent.OsFamilyCode))
                 ProcessDeviceBrand();
@@ -203,7 +187,7 @@ namespace Udger.Parser
             if (ipVer != 4)
                 return;
 
-            var ipLong = AddrToInt(ip);
+            var ipLong = IpToInt(ip);
 
             var dataCenter = dt.SelectQuery(@"select name, name_code, homepage
                 FROM udger_datacenter_range
@@ -217,25 +201,25 @@ namespace Udger.Parser
 
         #region process methods
 
-        private void ProcessOs(string uaString, ref int osId, int clientId)
+        private void ProcessOs(string uaString, int clientId)
         {
             var rowId = FindIdFromList(uaString, osWordDetector.FindWords(uaString), osRegstringList);
             if (rowId != -1)
             {
                 var q = string.Format(UdgerSqlQuery.SQL_OS, rowId);
                 var opSysRs = dt.SelectQuery(q);
-                PrepareOs(opSysRs.Rows[0], ref osId);
+                PrepareOs(opSysRs.Rows[0]);
             }
             else if(clientId != 0)
             {
                 var opSysRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_OS, clientId));
                 if (opSysRs != null && opSysRs.Rows.Count > 0)
-                    PrepareOs(opSysRs.Rows[0], ref osId);
+                    PrepareOs(opSysRs.Rows[0]);
             }
         }
 
 
-        private void ProcessClient(string uaString, ref int osId, ref int clientId, ref int classId)
+        private void ProcessClient(string uaString, ref int clientId, ref int classId)
         {
             var q = string.Format(UdgerSqlQuery.SQL_CRAWLER, uaString);
             var userAgentRs = dt.SelectQuery(q);
@@ -261,13 +245,13 @@ namespace Udger.Parser
             }
         }
 
-        private void ProcessDevice(string uaString, ref int classId)
+        private void ProcessDevice(string uaString, int classId)
         {
             var rowId = FindIdFromList(uaString, deviceWordDetector.FindWords(uaString), deviceRegstringList);
             if (rowId != -1)
             {
                 var devRs = dt.SelectQuery(String.Format(UdgerSqlQuery.SQL_DEVICE, rowId));
-                PrepareDevice(devRs.Rows[0], ref classId);
+                PrepareDevice(devRs.Rows[0]);
             }
             else
             {
@@ -276,7 +260,7 @@ namespace Udger.Parser
 
                 var devRs = dt.SelectQuery(string.Format(UdgerSqlQuery.SQL_CLIENT_CLASS, classId.ToString()));
                 if (devRs != null && devRs.Rows.Count > 0)
-                    PrepareDevice(devRs.Rows[0], ref classId);
+                    PrepareDevice(devRs.Rows[0]);
             }
         }
 
@@ -364,9 +348,8 @@ namespace Udger.Parser
             UserAgent.UaEngine = ConvertToStr(row["ua_engine"]);
         }
 
-        private void PrepareOs(DataRow row, ref int osId)
+        private void PrepareOs(DataRow row)
         {
-            //_osId = Convert.ToInt32(_row["os_id"]);
             UserAgent.Os = ConvertToStr(row["os"]);
             UserAgent.OsCode = ConvertToStr(row["os_code"]);
             UserAgent.OsHomepage = ConvertToStr(row["os_home_page"]);
@@ -380,9 +363,8 @@ namespace Udger.Parser
             UserAgent.OsFamilyVendorHomepage = ConvertToStr(row["os_family_vedor_homepage"]);
         }
 
-        private void PrepareDevice(DataRow row, ref int deviceClassId)
+        private void PrepareDevice(DataRow row)
         {
-            //_deviceClassId = Convert.ToInt32(_row["device_class"]);
             UserAgent.DeviceClass = ConvertToStr(row["device_class"]);
             UserAgent.DeviceClassCode = ConvertToStr(row["device_class_code"]);
             UserAgent.DeviceClassIcon = ConvertToStr(row["device_class_icon"]);
@@ -457,10 +439,10 @@ namespace Udger.Parser
             return 0;
         }
 
-        private long AddrToInt(string addr)
+        private long IpToInt(string ip)
         {
             return (uint)System.Net.IPAddress.NetworkToHostOrder(
-                (int)System.Net.IPAddress.Parse(addr).Address);
+                (int)System.Net.IPAddress.Parse(ip).Address);
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
