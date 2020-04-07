@@ -18,6 +18,7 @@ using System;
 using System.Text;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -43,9 +44,9 @@ namespace Udger.Parser
         private static WordDetector deviceWordDetector;
         private static WordDetector osWordDetector;
 
-        private static List<IdRegString> clientRegstringList;
-        private static List<IdRegString> osRegstringList;
-        private static List<IdRegString> deviceRegstringList;
+        private static IdRegString[] clientRegstringList;
+        private static IdRegString[] osRegstringList;
+        private static IdRegString[] deviceRegstringList;
         #endregion
 
         #region Constructor
@@ -476,30 +477,31 @@ namespace Udger.Parser
             return -1;
         }
 
-        private static List<IdRegString> PrepareRegexpStruct(DataReader connection, string regexpTableName) 
+        private static IdRegString[] PrepareRegexpStruct(DataReader connection, string regexpTableName) 
         {
-            var ret = new List<IdRegString>();
-            var rows = connection.Select("SELECT rowid, regstring, word_id, word2_id FROM " + regexpTableName + " ORDER BY sequence");
+            return connection
+                .Select("SELECT rowid, regstring, word_id, word2_id FROM " + regexpTableName + " ORDER BY sequence")
+                .Select(CreateRegexpStruct)
+                .ToArray();
+        }
 
-            foreach (var row in rows)
+        private static IdRegString CreateRegexpStruct(DataRow row)
+        {
+            var irs = new IdRegString
             {
-                var irs = new IdRegString
-                {
-                    Id = row.Read<int>("rowid"),
-                    WordId1 = row.Read<int>("word_id"),
-                    WordId2 = row.Read<int>("word2_id")
-                };
+                Id = row.Read<int>("rowid"),
+                WordId1 = row.Read<int>("word_id"),
+                WordId2 = row.Read<int>("word2_id")
+            };
 
-                var regex = row.Read<string>("regstring");
-                var reg = new Regex(@"^/?(.*?)/si$");
-                if (reg.IsMatch(regex))
-                    regex = reg.Match(regex).Groups[0].ToString();
+            var regex = row.Read<string>("regstring");
+            var reg = new Regex(@"^/?(.*?)/si$");
+            if (reg.IsMatch(regex))
+                regex = reg.Match(regex).Groups[0].ToString();
 
-                irs.Pattern = regex;
-                ret.Add(irs);
-            }
+            irs.Pattern = regex;
 
-            return ret;
+            return irs;
         }
 
         #endregion
