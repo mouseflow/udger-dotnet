@@ -10,8 +10,10 @@
   link       https://udger.com/products/local_parser
  */
 
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Linq;
 
 namespace Udger.Parser
 {
@@ -19,25 +21,30 @@ namespace Udger.Parser
     {
         public string DataSourcePath { get; set; }
 
-        public DataTable SelectQuery(string query)
+        public IEnumerable<DataRow> Select(string query)
         {
             using (var connection = CreateConnection(DataSourcePath))
             using (var command = CreateCommand(connection, query))
+            using (var reader = command.ExecuteReader())
             {
-                var dataTable = new DataTable();
-                var adapter = new SQLiteDataAdapter(command);
-                adapter.Fill(dataTable);
-
-                return dataTable;
+                while (reader.Read())
+                {
+                    yield return new DataRow(reader);
+                }
             }
         }
 
-        private static SQLiteConnection CreateConnection(string dataSourcePath)
+        public DataRow SelectRow(string query)
+        {
+            return Select(query).FirstOrDefault();
+        }
+
+        private static IDbConnection CreateConnection(string dataSourcePath)
         {
             return new SQLiteConnection($"Data Source={dataSourcePath}");
         }
 
-        private static SQLiteCommand CreateCommand(SQLiteConnection connection, string commandText)
+        private static IDbCommand CreateCommand(IDbConnection connection, string commandText)
         {
             var command = connection.CreateCommand();
             command.CommandText = commandText;
