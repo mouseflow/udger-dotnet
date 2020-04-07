@@ -449,6 +449,8 @@ namespace Udger.Parser
                 result.AddWord(id, word);
             }
 
+            result.Freeze();
+
             return result;
         }
 

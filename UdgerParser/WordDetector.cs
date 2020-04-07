@@ -10,6 +10,7 @@
   link       https://udger.com/products/local_parser
  */
 
+using System;
 using System.Collections.Generic;
 
 namespace Udger.Parser
@@ -33,6 +34,7 @@ namespace Udger.Parser
 
         private readonly List<WordInfo>[] wordArray;
         private int minWordSize = int.MaxValue;
+        private bool isFrozen;
 
         public WordDetector()
         {
@@ -41,6 +43,9 @@ namespace Udger.Parser
 
         public void AddWord(int id, string word)
         {
+            if (isFrozen)
+                throw new Exception("Cannot add words after the WordDetector is frozen");
+
             if (word.Length < minWordSize)
                 minWordSize = word.Length;
 
@@ -60,6 +65,9 @@ namespace Udger.Parser
 
         public HashSet<int> FindWords(string text)
         {
+            if (!isFrozen)
+                throw new Exception("Cannot find words before the WordDetector is frozen");
+
             var ret = new HashSet<int>();
 
             var s = text.ToLower();
@@ -84,6 +92,11 @@ namespace Udger.Parser
             }
 
             return ret;
+        }
+
+        public void Freeze()
+        {
+            isFrozen = true;
         }
     }
 }
