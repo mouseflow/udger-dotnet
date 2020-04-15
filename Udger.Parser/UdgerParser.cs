@@ -137,7 +137,7 @@ namespace Udger.Parser
                 ProcessDeviceBrand(userAgent, uaString);
 
             if (useCache)
-                cache.Set(uaString, userAgent);
+                cache.TryAdd(uaString, userAgent);
 
             return userAgent;
         }
