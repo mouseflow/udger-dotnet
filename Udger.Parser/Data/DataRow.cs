@@ -16,7 +16,7 @@ using System.Data;
 
 namespace Udger.Parser
 {
-    class DataRow : Dictionary<string, object>
+    internal class DataRow : Dictionary<string, object>
     {
         public DataRow(IDataReader reader)
         {

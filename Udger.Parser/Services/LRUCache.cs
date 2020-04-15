@@ -1,4 +1,4 @@
-﻿/*
+/*
   UdgerParser - Local parser lib
   
   UdgerParser class parses useragent strings based on a database downloaded from udger.com
@@ -15,7 +15,7 @@ using System.Collections.Generic;
 
 namespace Udger.Parser
 {
-    class LRUCache<TKey, TValue>
+    internal class LRUCache<TKey, TValue>
     {
         private readonly Dictionary<TKey, Node> entries;
         private readonly int capacity;

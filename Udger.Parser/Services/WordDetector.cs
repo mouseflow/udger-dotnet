@@ -15,7 +15,7 @@ using System.Collections.Generic;
 
 namespace Udger.Parser
 {
-    class WordDetector
+    internal class WordDetector
     {
         private struct WordInfo
         {

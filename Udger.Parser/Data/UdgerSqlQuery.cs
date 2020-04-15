@@ -12,7 +12,7 @@
 
 namespace Udger.Parser
 {
-    class UdgerSqlQuery
+    internal class UdgerSqlQuery
     {
         public static readonly string SQL_CRAWLER =
             "SELECT " +

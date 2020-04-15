@@ -17,7 +17,7 @@ using System.Linq;
 
 namespace Udger.Parser
 {
-    class DataReader
+    internal class DataReader
     {
         public string DataSourcePath { get; set; }
 

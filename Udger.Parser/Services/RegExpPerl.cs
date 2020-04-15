@@ -8,6 +8,7 @@
  
  You must not remove this notice from this software.
 */
+
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -19,7 +20,7 @@ namespace Udger.Parser
     /// transformation of the regular expression itself.
     /// </summary>
     [Flags]
-    enum PerlRegexOptions
+    internal enum PerlRegexOptions
     {
         None = 0,
         Evaluate = 1,
@@ -34,7 +35,7 @@ namespace Udger.Parser
     /// <summary>
     /// Used for converting PHP Perl like regular expressions to .NET regular expressions.
     /// </summary>
-    sealed class PerlRegExpConverter
+    internal sealed class PerlRegExpConverter
     {
         #region Properties
 
