@@ -10,7 +10,7 @@
   link       https://udger.com/products/local_parser
  */
 
-namespace Udger.Parser
+namespace Udger.Parser.Data
 {
     internal class UdgerSqlQuery
     {

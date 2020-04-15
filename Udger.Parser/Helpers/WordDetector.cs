@@ -13,7 +13,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Udger.Parser
+namespace Udger.Parser.Helpers
 {
     internal class WordDetector
     {

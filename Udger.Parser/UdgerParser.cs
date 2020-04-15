@@ -21,6 +21,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Udger.Parser.Cache;
+using Udger.Parser.Data;
+using Udger.Parser.Helpers;
 
 namespace Udger.Parser
 {

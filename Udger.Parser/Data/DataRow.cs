@@ -14,7 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace Udger.Parser
+namespace Udger.Parser.Data
 {
     internal class DataRow : Dictionary<string, object>
     {

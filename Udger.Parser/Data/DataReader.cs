@@ -15,7 +15,7 @@ using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 
-namespace Udger.Parser
+namespace Udger.Parser.Data
 {
     internal class DataReader
     {
