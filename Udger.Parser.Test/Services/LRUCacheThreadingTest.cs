@@ -9,13 +9,11 @@ namespace Udger.Parser.Test.Services
 {
     public class LRUCacheThreadingTest : IClassFixture<LRUCacheThreadingFixture>
     {
-        private readonly LRUCacheThreadingFixture fixture;
         private readonly LRUCache<string, string> cache;
 
         public LRUCacheThreadingTest(LRUCacheThreadingFixture fixture)
         {
-            this.fixture = fixture;
-            cache = LRUCacheThreadingFixture.Cache;
+            cache = fixture.Cache;
         }
 
         [Theory]
@@ -133,7 +131,7 @@ namespace Udger.Parser.Test.Services
         }
     }
 
-    public class LRUCacheThreadingFixture : IDisposable
+    public class LRUCacheThreadingFixture
     {
         private const int NumberOfThreads = 4;
         private const int ExecutionsPerThread = 1000000;
@@ -163,11 +161,6 @@ namespace Udger.Parser.Test.Services
             threads.ForEach(thread => thread.Join());
         }
 
-        public static LRUCache<string, string> Cache { get; private set; }
-
-        public void Dispose()
-        {
-            Cache = null;
-        }
+        public LRUCache<string, string> Cache { get; }
     }
 }
