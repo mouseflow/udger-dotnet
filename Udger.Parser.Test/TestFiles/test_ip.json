@@ -58,9 +58,9 @@
             "crawler_category": "Search engine bot",
             "crawler_category_code": "search_engine_bot",
             "crawler_respect_robotstxt": "unknown",
-            "datacenter_name": "Seznam.cz",
-            "datacenter_name_code": "seznam_cz",
-            "datacenter_homepage": "http:\/\/onas.seznam.cz\/"
+            "datacenter_name": "",
+            "datacenter_name_code": "",
+            "datacenter_homepage": ""
         }
     },
     {
@@ -90,9 +90,9 @@
             "crawler_category": "",
             "crawler_category_code": "",
             "crawler_respect_robotstxt": "",
-            "datacenter_name": "OVH",
-            "datacenter_name_code": "ovh",
-            "datacenter_homepage": "http:\/\/www.ovh.com\/"
+            "datacenter_name": "",
+            "datacenter_name_code": "",
+            "datacenter_homepage": ""
         }
     },
     {
@@ -134,8 +134,8 @@
         "ret": {
             "ip": "90.177.52.111",
             "ip_ver": "4",
-            "ip_classification": "Unrecognized",
-            "ip_classification_code": "unrecognized",
+            "ip_classification": "",
+            "ip_classification_code": "",
             "ip_hostname": "",
             "ip_country": "",
             "ip_country_code": "",
