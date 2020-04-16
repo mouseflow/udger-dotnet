@@ -21,7 +21,7 @@ namespace Udger.Parser.Data
         public DataRow(IDataReader reader)
         {
             for (var i = 0; i < reader.FieldCount; i++)
-                Add(reader.GetName(i), reader[i]);
+                this[reader.GetName(i)] = reader[i];
         }
 
         public T Read<T>(string key)
