@@ -67,7 +67,7 @@ namespace Udger.Parser
         }
         #endregion
 
-        #region setParser method
+        #region public method
         /// <summary>
         /// Set the data directory and DB filename
         /// </summary> 
@@ -87,9 +87,7 @@ namespace Udger.Parser
 
             connected = true;
         }
-        #endregion
 
-        #region public method
         /// <summary>
         /// Parse the useragent string and/or ip address
         /// /// </summary>

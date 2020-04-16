@@ -40,7 +40,9 @@ namespace Udger.Parser.Data
 
         private static IDbConnection CreateConnection(string dataSourcePath)
         {
-            return new SQLiteConnection($"Data Source={dataSourcePath}");
+            var connection = new SQLiteConnection($"Data Source={dataSourcePath}");
+            connection.Open();
+            return connection;
         }
 
         private static IDbCommand CreateCommand(IDbConnection connection, string commandText)
