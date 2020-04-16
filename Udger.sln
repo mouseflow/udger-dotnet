@@ -1,21 +1,14 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29424.173
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udger.Parser.Old", "UdgerParser\Udger.Parser.Old.csproj", "{DE1F8243-40A6-44D7-90CC-A2203F572A72}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTest", "ConsoleTest\ConsoleTest.csproj", "{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F7A0F21B-3FA1-4B99-8F46-E94A70608938}"
 	ProjectSection(SolutionItems) = preProject
 		LICENSE = LICENSE
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataTest", "DataTest\DataTest.csproj", "{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udger.Parser", "Udger.Parser\Udger.Parser.csproj", "{200E4267-C847-4DD0-A2A5-1363DDBAC6E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udger.Parser", "Udger.Parser\Udger.Parser.csproj", "{200E4267-C847-4DD0-A2A5-1363DDBAC6E6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udger.Parser.Test", "Udger.Parser.Test\Udger.Parser.Test.csproj", "{5B76665D-B879-4055-91E1-3A2165AC4AAA}"
 EndProject
@@ -29,38 +22,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{DE1F8243-40A6-44D7-90CC-A2203F572A72}.Release|x86.ActiveCfg = Release|Any CPU
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Debug|x86.ActiveCfg = Debug|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Debug|x86.Build.0 = Debug|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Release|Any CPU.ActiveCfg = Release|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Release|Mixed Platforms.Build.0 = Release|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Release|x86.ActiveCfg = Release|x86
-		{8DDFCD4A-71F7-4EC4-906C-8C3459651C6C}.Release|x86.Build.0 = Release|x86
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Debug|x86.Build.0 = Debug|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Release|x86.ActiveCfg = Release|Any CPU
-		{5F9745AF-C0D0-40FC-9F9E-8BAB370780B2}.Release|x86.Build.0 = Release|Any CPU
 		{200E4267-C847-4DD0-A2A5-1363DDBAC6E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{200E4267-C847-4DD0-A2A5-1363DDBAC6E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{200E4267-C847-4DD0-A2A5-1363DDBAC6E6}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -88,5 +49,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {50626C11-7CC2-473E-A3E5-9E3B28D4CCC9}
 	EndGlobalSection
 EndGlobal
