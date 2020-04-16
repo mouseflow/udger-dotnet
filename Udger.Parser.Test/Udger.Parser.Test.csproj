@@ -17,4 +17,16 @@
     <ProjectReference Include="..\Udger.Parser\Udger.Parser.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestFiles\test_ip.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestFiles\test_ua.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestFiles\udgerdb_v3.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
