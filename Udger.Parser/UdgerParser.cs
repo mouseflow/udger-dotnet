@@ -94,9 +94,17 @@ namespace Udger.Parser
         public UserAgent ParseUserAgent(string ua)
         {
             if (useCache && cache.TryGetValue(ua, out var userAgent))
+            {
+                userAgent.Cached = true;
                 return userAgent;
+            }
 
-            return ParseUa(ua.Replace("'", "''"));
+            userAgent = ParseUa(ua.Replace("'", "''"));
+
+            if (useCache)
+                cache.TryAdd(ua, userAgent);
+
+            return userAgent;
         }
 
         /// <summary>
@@ -133,9 +141,6 @@ namespace Udger.Parser
 
             if (!string.IsNullOrEmpty(userAgent.OsFamilyCode))
                 ProcessDeviceBrand(userAgent, uaString);
-
-            if (useCache)
-                cache.TryAdd(uaString, userAgent);
 
             return userAgent;
         }

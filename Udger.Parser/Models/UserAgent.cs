@@ -145,5 +145,7 @@ namespace Udger.Parser
 
         [NamePosition(43, Name = "DeviceBrandInfoUrl")]
         public string DeviceBrandInfoUrl { get; set; }
+
+        public bool Cached { get; set; }
     }
 }
